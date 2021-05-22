@@ -180,6 +180,7 @@ only record the event once the deferred completes:
   (d/chain
     (d/future
       (crunch-numbers 8675309))
+    do-thing-with-result
     ,,,))
 ```
 
@@ -198,8 +199,8 @@ All of the provided keys will be present in the final event.
 ### Annotations
 
 Finally, you can _annotate_ enclosing spans by adding additional properties to
-the events. When code is executing inside a `watch`, you can use the `annotate`
-and `time` tools:
+the events. When code is executing inside a `watch`, you can use the `annotate`,
+`time`, and `error` tools:
 
 ```clojure
 (ken/watch "a thing"
@@ -209,12 +210,12 @@ and `time` tools:
     (ken/time ::thinking
       (think-heavily "what is consciousness?"))
     (catch Exception ex
-      (ken/annotate {::error ex}))))
+      (ken/error ex))))
 ```
 
 This would produce a span event labeled `"a thing"` with a few potential
-additional attributes - a `::foo?` key set to true, an `::error` key with a
-caught exception, and a `::thinking` key holding the number of milliseconds
+additional attributes - a `::foo?` key set to true, an `::event/error` key with
+the caught exception, and a `::thinking` key holding the number of milliseconds
 spent in the `think-heavily` call.
 
 ### Sampling
