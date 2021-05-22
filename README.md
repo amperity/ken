@@ -1,6 +1,10 @@
 ken
 ===
 
+[![CircleCI](https://circleci.com/gh/amperity/ken.svg?style=shield&circle-token=15e84dcf80db1a201e8113388c86da9dbd5223d4)](https://circleci.com/gh/amperity/ken)
+[![codecov](https://codecov.io/gh/amperity/ken/branch/master/graph/badge.svg)](https://codecov.io/gh/amperity/ken)
+[![cljdoc badge](https://cljdoc.org/badge/amperity/ken)](https://cljdoc.org/d/amperity/ken/CURRENT)
+
 > [ken](https://www.wordnik.com/words/ken)
 > - _noun_ Perception; understanding.
 > - _noun_ View; sight.
@@ -127,7 +131,11 @@ Above are two related spans, the second nested inside the first.
 
 ## Usage
 
-Enough theory, how do you actually use this?
+Enough theory, how do you actually use this? Releases are published on Clojars;
+to use the latest version with Leiningen, add the following to your project
+dependencies:
+
+[![Clojars Project](http://clojars.org/amperity/ken/latest-version.svg)](http://clojars.org/amperity/ken)
 
 ```clojure
 (require
