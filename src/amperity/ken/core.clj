@@ -111,6 +111,15 @@
       (swap! trace merge data))))
 
 
+(defn error
+  "Annotate the enclosing span with an error that was encountered during
+  execution. Sets the exception under the `:amperity.ken.event/error` key
+  and sets `:amperity.ken.event/fault?` to true."
+  [ex]
+  (annotate {::event/fault? true
+             ::event/error ex}))
+
+
 (defmacro time
   "Time the given body of expressions and annotate the enclosing span with the
   duration in milliseconds under the given key."
