@@ -1,0 +1,96 @@
+version: 2.1
+
+# Common executor configuration
+executors:
+  clojure:
+    docker:
+      - image: circleci/clojure:lein-2.9.1
+    working_directory: ~/repo
+
+
+# Job definitions
+jobs:
+  lint:
+    executor: clojure
+    steps:
+      - checkout
+      - run:
+          name: Install clj-kondo
+          environment:
+            CLJ_KONDO_VERSION: 2021.04.23
+          command: |
+            wget https://github.com/borkdude/clj-kondo/releases/download/v${CLJ_KONDO_VERSION}/clj-kondo-${CLJ_KONDO_VERSION}-linux-amd64.zip
+            unzip clj-kondo-${CLJ_KONDO_VERSION}-linux-amd64.zip
+      - run:
+          name: Lint source code
+          command: "./clj-kondo --lint src test"
+
+  style:
+    executor: clojure
+    steps:
+      - checkout
+      - run:
+          name: Install cljstyle
+          environment:
+            CLJSTYLE_VERSION: 0.15.0
+          command: |
+            wget https://github.com/greglook/cljstyle/releases/download/${CLJSTYLE_VERSION}/cljstyle_${CLJSTYLE_VERSION}_linux.zip
+            unzip cljstyle_${CLJSTYLE_VERSION}_linux.zip
+      - run:
+          name: Check source formatting
+          command: "./cljstyle check --report"
+
+  test:
+    executor: clojure
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-test-{{ checksum "project.clj" }}
+            - v1-test-
+      - run:
+          command: lein deps
+      - run:
+          command: lein check
+      - run:
+          command: lein test
+      - save_cache:
+          key: v1-test-{{ checksum "project.clj" }}
+          paths:
+            - ~/.m2
+
+  coverage:
+    executor: clojure
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-coverage-{{ checksum "project.clj" }}
+            - v1-coverage-
+            - v1-test-
+      - run:
+          name: Generate test coverage
+          command: lein cloverage --codecov
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-coverage-{{ checksum "project.clj" }}
+      - store_artifacts:
+          path: target/coverage
+          destination: coverage
+      - run:
+          name: Publish Coverage
+          command: 'bash <(curl -s https://codecov.io/bash) -f target/coverage/codecov.json'
+
+
+# Workflow definitions
+workflows:
+  version: 2
+  build:
+    jobs:
+      - lint
+      - style
+      - test
+      - coverage:
+          requires:
+            - test
