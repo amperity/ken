@@ -1,4 +1,4 @@
-(ns amperity.ken.context
+(ns ken.context
   "Functions for collecting context from various sources and merging into a
   collected context map.
 

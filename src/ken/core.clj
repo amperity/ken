@@ -1,4 +1,4 @@
-(ns amperity.ken.core
+(ns ken.core
   "Core user API namespace for ken instrumentation.
 
   There are really three significant phases where data is collected to form an
@@ -20,12 +20,12 @@
   time to enrich it with extra data in phase two."
   (:refer-clojure :exclude [time])
   (:require
-    [amperity.ken.context :as ctx]
-    [amperity.ken.event :as event]
-    [amperity.ken.tap :as tap]
-    [amperity.ken.trace :as trace]
-    [amperity.ken.util :as ku]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [ken.context :as ctx]
+    [ken.event :as event]
+    [ken.tap :as tap]
+    [ken.trace :as trace]
+    [ken.util :as ku]))
 
 
 ;; ## Attribute Collection
@@ -104,7 +104,7 @@
   can instead provide a map (which must include a value for `::event/label`).
 
       ;; shorthand
-      (ken/watch \"amperity.my.code/do-the-thing\"
+      (ken/watch \"my.code/do-the-thing\"
         ,,,)
 
       ;; shorthand with auto-resolved keyword
@@ -112,7 +112,7 @@
         ,,,)
 
       ;; expanded form
-      (ken/watch {::ken.evt/label \"amperity.my.code/do-the-thing\"
+      (ken/watch {::ken.evt/label \"my.code/do-the-thing\"
                   ::something 123
                   ,,,}
         ,,,)
@@ -185,8 +185,8 @@
 
 (defn error
   "Annotate the enclosing span with an error that was encountered during
-  execution. Sets the exception under the `:amperity.ken.event/error` key
-  and sets `:amperity.ken.event/fault?` to true."
+  execution. Sets the exception under the `:ken.event/error` key
+  and sets `:ken.event/fault?` to true."
   [ex]
   (when-not (instance? Throwable ex)
     (throw (IllegalArgumentException.

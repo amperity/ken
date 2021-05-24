@@ -1,10 +1,10 @@
-(ns amperity.ken.core-test
+(ns ken.core-test
   (:require
-    [amperity.ken.core :as ken]
-    [amperity.ken.event :as event]
-    [amperity.ken.tap :as tap]
-    [amperity.ken.trace :as trace]
     [clojure.test :refer [deftest testing is]]
+    [ken.core :as ken]
+    [ken.event :as event]
+    [ken.tap :as tap]
+    [ken.trace :as trace]
     [manifold.deferred :as d]))
 
 

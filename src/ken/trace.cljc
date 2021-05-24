@@ -1,4 +1,4 @@
-(ns amperity.ken.trace
+(ns ken.trace
   "Tracing support for instrumenting code.
 
   Trace data is structured as events with a few special properties:
@@ -22,9 +22,9 @@
   (:require
     [alphabase.base32 :as b32]
     [alphabase.bytes :as b]
-    [amperity.ken.event :as event]
     [clojure.spec.alpha :as s]
-    [clojure.string :as str]))
+    [clojure.string :as str]
+    [ken.event :as event]))
 
 
 ;; ## Trace Attributes

@@ -1,8 +1,8 @@
-(ns amperity.ken.trace-test
+(ns ken.trace-test
   (:require
-    [amperity.ken.event :as event]
-    [amperity.ken.trace :as trace]
-    [clojure.test :refer [deftest testing is]]))
+    [clojure.test :refer [deftest testing is]]
+    [ken.event :as event]
+    [ken.trace :as trace]))
 
 
 (deftest trace-data

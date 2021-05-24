@@ -1,4 +1,4 @@
-(ns amperity.ken.event
+(ns ken.event
   "Base event attributes and functions."
   (:require
     [clojure.spec.alpha :as s]))
@@ -75,7 +75,7 @@
 ;; ## Utility Functions
 
 (defn now
-  "Return the current instant."
+  "Return the current instant. This can be overridden for testing purposes."
   []
   #?(:clj (java.time.Instant/now)
      ;; TODO: should this be goog.DateTime instead?

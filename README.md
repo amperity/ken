@@ -35,14 +35,14 @@ use the tools effectively.
 
 An _event_ is a map of Clojure keys and values which represent a thing that
 happened in your code. Events will typically contain a selection of keys from
-`amperity.ken.event` to provide a basic foundation:
+`ken.event` to provide a basic foundation:
 
 ```clojure
-{:amperity.ken.event/time #inst "2020-03-27T21:22:27.003Z",
- :amperity.ken.event/duration 44.362681,
- :amperity.ken.event/label "the thing",
- :amperity.ken.event/message "Perform some routine activity",
- :amperity.ken.event/ns amperity.foo.thing,
+{:ken.event/time #inst "2020-03-27T21:22:27.003Z",
+ :ken.event/duration 44.362681,
+ :ken.event/label "the thing",
+ :ken.event/message "Perform some routine activity",
+ :ken.event/ns my.foo.thing,
  ,,,}
 ```
 
@@ -90,7 +90,7 @@ As an example, we can [pretty-print](https://github.com/greglook/puget) all
 events to our console for inspection:
 
 ```clojure
-(amperity.ken.tap/subscribe! :cprint puget.printer/cprint)
+(ken.tap/subscribe! :cprint puget.printer/cprint)
 ```
 
 Subscribed functions will be called with every event sent to the tap and should
@@ -112,17 +112,17 @@ Using the library will automatically capture and extend the tracing identifiers
 where needed, which show up in the observed events:
 
 ```clojure
-{:amperity.ken.event/time #inst "2020-03-27T21:22:27.003Z",
- :amperity.ken.event/duration 44.362681,
- :amperity.ken.trace/trace-id "bplzs2gajkfcbojkspx7",
- :amperity.ken.trace/span-id "cuoclyafu4",
+{:ken.event/time #inst "2020-03-27T21:22:27.003Z",
+ :ken.event/duration 44.362681,
+ :ken.trace/trace-id "bplzs2gajkfcbojkspx7",
+ :ken.trace/span-id "cuoclyafu4",
  ,,,}
 
-{:amperity.ken.event/time #inst "2020-03-27T21:22:27.005Z",
- :amperity.ken.event/duration 41.805794,
- :amperity.ken.trace/trace-id "bplzs2gajkfcbojkspx7",
- :amperity.ken.trace/parent-id "cuoclyafu4",
- :amperity.ken.trace/span-id "cjatpftw5j",
+{:ken.event/time #inst "2020-03-27T21:22:27.005Z",
+ :ken.event/duration 41.805794,
+ :ken.trace/trace-id "bplzs2gajkfcbojkspx7",
+ :ken.trace/parent-id "cuoclyafu4",
+ :ken.trace/span-id "cjatpftw5j",
  ,,,}
 ```
 
@@ -139,9 +139,7 @@ add the following to your project dependencies:
 Enough theory, how do you actually use this?
 
 ```clojure
-(require
-  '[amperity.ken.core :as ken]
-  '[amperity.ken.event :as event])
+(require '[ken.core :as ken])
 ```
 
 ### Direct Observation
@@ -150,7 +148,7 @@ The most direct way to use the library is to call the `observe` macro in your
 code in order to send events.
 
 ```clojure
-(ken/observe {::event/label "a thing", ::my/key 123})
+(ken/observe {:ken.event/label "a thing", ::my/key 123})
 ```
 
 This will collect the local context, add it to the event, then send it to the
@@ -186,10 +184,10 @@ only record the event once the deferred completes:
 ```
 
 For richer event data, you can specify a map - the string versions above
-automatically expand into `:amperity.ken.event/label` entries:
+automatically expand into `:ken.event/label` entries:
 
 ```clojure
-(ken/watch {::event/label "foo the bar"
+(ken/watch {:ken.event/label "foo the bar"
             ::foo 123
             ::bar 'baz}
   (foo-bar! bar))
@@ -215,9 +213,9 @@ the events. When code is executing inside a `watch`, you can use the `annotate`,
 ```
 
 This would produce a span event labeled `"a thing"` with a few potential
-additional attributes - a `::foo?` key set to true, an `::event/error` key with
-the caught exception, and a `::thinking` key holding the number of milliseconds
-spent in the `think-heavily` call.
+additional attributes - a `::foo?` key set to true, an `:ken.event/error` key
+with the caught exception, and a `::thinking` key holding the number of
+milliseconds spent in the `think-heavily` call.
 
 ### Sampling
 
@@ -230,13 +228,13 @@ Sampling is controlled by two tracing keys, which can be specified in the
 initial `ken/watch` or in a later `ken/annotate` call.
 
 In order to opt into sampling for a specific span, you can seet the
-`:amperity.ken.event/sample-rate` key. This is an integer value `n` that will
-cause, on average, about `1/n` of the events to be sampled. The rest will be
-marked to be discarded by consumers.
+`:ken.event/sample-rate` key. This is an integer value `n` that will cause, on
+average, about `1/n` of the events to be sampled. The rest will be marked to be
+discarded by consumers.
 
 When a span has been marked for sampling, it will set the second tracing key
-`:amperity.ken.trace/keep?` on the resulting event. The keep key can have one
-of three possible states:
+`:ken.trace/keep?` on the resulting event. The keep key can have one of three
+possible states:
 
 - `nil` or absent: The span will be kept and forwarded along. This is the
   default behavior.
@@ -245,9 +243,9 @@ of three possible states:
 - `true`: The span and its children will be kept. This decision overrides
   sampling logic in child spans.
 
-The `::trace/keep?` key can also be set directly; for example, if you encounter
-an error and want to ensure that a span and its (subsequent) children are
-recorded, you can use `annotate` to set the flag to true.
+The `:ken.trace/keep?` key can also be set directly; for example, if you
+encounter an error and want to ensure that a span and its (subsequent) children
+are recorded, you can use `annotate` to set the flag to true.
 
 For additional reading on sampling best practices, see
 [Honeycomb's article](https://docs.honeycomb.io/working-with-your-data/best-practices/sampling/)

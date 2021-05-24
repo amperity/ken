@@ -1,4 +1,4 @@
-(ns amperity.ken.util
+(ns ^:no-doc ken.util
   "Utilities for the observability code."
   (:require
     [manifold.deferred :as d]))

@@ -1,4 +1,4 @@
-(ns amperity.ken.tap
+(ns ken.tap
   "Observability instrumentation using a global 'tap' which can have events
   reported to it from any location in the code. This draws inspiration from
   Clojure's `tap>`, but is more directly targeted at instrumentation."
@@ -70,7 +70,7 @@
                         nil)))
                   @subscriptions)
                 (recur)))
-            "amperity.ken.tap/publisher")
+            "ken.tap/publisher")
       (.setDaemon true)
       (.start))))
 

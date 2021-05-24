@@ -7,4 +7,4 @@
                       manifold.deferred d}}
 
            :unresolved-symbol
-           {:exclude [(amperity.ken.core-test/capture-observed [observed])]}}}
+           {:exclude [(ken.core-test/capture-observed [observed])]}}}
