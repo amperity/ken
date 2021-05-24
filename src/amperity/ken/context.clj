@@ -63,7 +63,7 @@
   (merge
     (reduce-kv
       (fn try-ctx
-        [ctx k f]
+        [ctx _k f]
         (try
           (conj ctx (f))
           (catch Exception _

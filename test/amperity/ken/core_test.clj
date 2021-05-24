@@ -5,9 +5,7 @@
     [amperity.ken.tap :as tap]
     [amperity.ken.trace :as trace]
     [clojure.test :refer [deftest testing is]]
-    [manifold.deferred :as d])
-  (:import
-    java.time.Instant))
+    [manifold.deferred :as d]))
 
 
 (defmacro capture-observed

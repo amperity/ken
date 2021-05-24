@@ -39,7 +39,7 @@
 (deftest subscriber-error
   (is (= ::err (ken.tap/subscribe!
                  ::err
-                 (fn [event] (throw (RuntimeException. "BOOM"))))))
+                 (fn [_] (throw (RuntimeException. "BOOM"))))))
   (is (true? (ken.tap/send {:a "thing"})))
   (await-tap 10))
 

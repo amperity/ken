@@ -4,4 +4,7 @@
                       clojure.spec.alpha s
                       clojure.set set
                       clojure.string str
-                      manifold.deferred d}}}}
+                      manifold.deferred d}}
+
+           :unresolved-symbol
+           {:exclude [(amperity.ken.core-test/capture-observed [observed])]}}}

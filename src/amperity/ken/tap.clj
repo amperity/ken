@@ -61,7 +61,7 @@
               (let [event (.take event-queue)]
                 (run!
                   (fn publish
-                    [[k f]]
+                    [[_k f]]
                     (try
                       (f event)
                       (catch Throwable _
