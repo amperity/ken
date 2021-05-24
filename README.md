@@ -54,29 +54,32 @@ context, custom identifiers, inputs and outputs, and more.
 ### Contexts
 
 A _context collector_ in `ken` is a source of contextual information used to
-enrich the events being observed. For example, you might want to pull some
-information out of the local system properties:
+enrich the events being observed. Contextual sources could include properties
+about the running process such as the build number and deployment environment,
+dynamic information about request-specific properties like the
+currently-authenticated user, and even local attributes that are breadcrumbs
+for deugging later.
 
 ```clojure
+;; Register a static context which is known at process startup:
+(let [build-info {:build-version (System/getProperty "my.build.version")}]
+  (ken.context/register-static! :build build-info))
+
+;; Context collection happens at the call location, so you can also
+;; pull dynamic properties:
 (defn user-context
   []
-  {::local-user (System/getProperty "user.name")})
+  (select-keys my.web.auth/*user-info* [:user/id :user/name :user/email]))
 
-(amperity.ken.context/register! :user user-context)
+(ken.context/register! :user-info user-context)
 ```
-
-After this, all events observed by `ken` will have the `::local-user` key
-populated by default. Other contextual sources could include properties about
-the running process such as the build number, environment, current heap size,
-etc.
 
 Contexts can be removed with `unregister!` and the keyword id, or reset
 entirely with `clear!`.
 
-If you have a service-oriented architecture, another rich source of context
-data can be the _broadcast context_ which is transmitted through the whole
-request graph. This usually includes information about the authenticated user
-making the request, the account it is for, and other widely-relevant info.
+If you have a service-oriented architecture, a rich source of additional data
+can be the _broadcast context_ which is transmitted through the whole request
+graph.
 
 ### Subscriptions
 
@@ -197,9 +200,10 @@ All of the provided keys will be present in the final event.
 
 ### Annotations
 
-Finally, you can _annotate_ enclosing spans by adding additional properties to
-the events. When code is executing inside a `watch`, you can use the `annotate`,
-`time`, and `error` tools:
+For data you don't necessarily know until you've started doing some work, you
+can _annotate_ enclosing spans by adding additional properties to the events.
+When code is executing inside a `watch`, you can use the `annotate`, `time`,
+and `error` tools:
 
 ```clojure
 (ken/watch "a thing"
@@ -216,6 +220,21 @@ This would produce a span event labeled `"a thing"` with a few potential
 additional attributes - a `::foo?` key set to true, an `:ken.event/error` key
 with the caught exception, and a `::thinking` key holding the number of
 milliseconds spent in the `think-heavily` call.
+
+### Local Context
+
+In addition to the registered context collector functions, ken comes with a
+built-in _local context_ which you can bind anywhere in your code to provide
+additional information. Unlike adding keys directly to `observe` and `watch`
+calls, these values are propagated to all events inside the block:
+
+```clojure
+;; all events observed inside this block will include the :foo and :bar keys
+(ken/with-context {:foo 123
+                   :bar "baz"}
+  (something-with-foos x y)
+  ,,,)
+```
 
 ### Sampling
 
