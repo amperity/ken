@@ -5,9 +5,7 @@
   Some example sources of context data:
   - environmental data about stack/sys/env/host names
   - request call graph context from prodigal
-  - tracing span information"
-  (:require
-    [clojure.tools.logging :as log]))
+  - tracing span information")
 
 
 (def ^:dynamic *local*
@@ -68,8 +66,9 @@
         [ctx k f]
         (try
           (conj ctx (f))
-          (catch Exception ex
-            (log/error ex "Unhandled failure in context collector" k)
+          (catch Exception _
+            ;; Swallow unhandled failure in collector
+            ;; TODO: how to notify the user?
             ctx)))
       {}
       @collectors)

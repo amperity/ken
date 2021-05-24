@@ -9,7 +9,6 @@
 
   :dependencies
   [[org.clojure/clojure "1.10.1"]
-   [org.clojure/tools.logging "1.1.0"]
    [mvxcvi/alphabase "2.1.0"]
    [manifold "0.1.8"]]
 

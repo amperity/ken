@@ -29,7 +29,9 @@
 
 
 (deftest collector-error
-  (is (= ::err (ken.ctx/register! ::err (fn [] (throw (RuntimeException. "BOOM"))))))
+  (is (= ::err (ken.ctx/register!
+                 ::err
+                 (fn [] (throw (RuntimeException. "BOOM"))))))
   (is (= {} (ken.ctx/collect))))
 
 

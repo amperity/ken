@@ -3,8 +3,6 @@
   reported to it from any location in the code. This draws inspiration from
   Clojure's `tap>`, but is more directly targeted at instrumentation."
   (:refer-clojure :exclude [send])
-  (:require
-    [clojure.tools.logging :as log])
   (:import
     (java.util.concurrent
       ArrayBlockingQueue
@@ -66,8 +64,10 @@
                     [[k f]]
                     (try
                       (f event)
-                      (catch Throwable ex
-                        (log/error ex "Unhandled failure in tap function" k))))
+                      (catch Throwable _
+                        ;; Swallow unhandled error in subscriber
+                        ;; TODO: how to notify the user?
+                        nil)))
                   @subscriptions)
                 (recur)))
             "amperity.ken.tap/publisher")

@@ -12,6 +12,19 @@
     (test-case)))
 
 
+(defn await-tap
+  "Wait for the tap to finish sending events for up to `n` attempts."
+  [n]
+  (loop [attempts n]
+    (when (and (pos? attempts) (pos? (ken.tap/queue-size)))
+      (Thread/sleep 10)
+      (recur (dec attempts))))
+  (when (pos? (ken.tap/queue-size))
+    (throw (IllegalStateException.
+             (str "tap queue still has " (ken.tap/queue-size)
+                  " events after " (* n 10) " ms")))))
+
+
 (deftest subscription-lifecycle
   (testing "clearing"
     (is (nil? (ken.tap/clear!))))
@@ -23,6 +36,14 @@
     (is (nil? (ken.tap/unsubscribe! ::prn)))))
 
 
+(deftest subscriber-error
+  (is (= ::err (ken.tap/subscribe!
+                 ::err
+                 (fn [event] (throw (RuntimeException. "BOOM"))))))
+  (is (true? (ken.tap/send {:a "thing"})))
+  (await-tap 10))
+
+
 (deftest publishing
   (let [results (atom [])
         record (partial swap! results conj)]
@@ -31,10 +52,7 @@
     (is (true? (ken.tap/send {:id 0})))
     (is (true? (ken.tap/send {:id 1})))
     ;; Wait for all events to be published.
-    (loop [attempts 10]
-      (when (and (pos? attempts) (pos? (ken.tap/queue-size)))
-        (Thread/sleep 10)
-        (recur (dec attempts))))
+    (await-tap 10)
     (is (= [{:id 0} {:id 1}] @results))))
 
 
