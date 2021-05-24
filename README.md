@@ -2,8 +2,8 @@ ken
 ===
 
 [![CircleCI](https://circleci.com/gh/amperity/ken.svg?style=shield&circle-token=15e84dcf80db1a201e8113388c86da9dbd5223d4)](https://circleci.com/gh/amperity/ken)
-[![codecov](https://codecov.io/gh/amperity/ken/branch/master/graph/badge.svg)](https://codecov.io/gh/amperity/ken)
-[![cljdoc badge](https://cljdoc.org/badge/amperity/ken)](https://cljdoc.org/d/amperity/ken/CURRENT)
+[![codecov](https://codecov.io/gh/amperity/ken/branch/main/graph/badge.svg)](https://codecov.io/gh/amperity/ken)
+[![cljdoc badge](https://cljdoc.org/badge/com.amperity/ken)](https://cljdoc.org/d/com.amperity/ken/CURRENT)
 
 > [ken](https://www.wordnik.com/words/ken)
 > - _noun_ Perception; understanding.
@@ -135,7 +135,7 @@ Enough theory, how do you actually use this? Releases are published on Clojars;
 to use the latest version with Leiningen, add the following to your project
 dependencies:
 
-[![Clojars Project](http://clojars.org/amperity/ken/latest-version.svg)](http://clojars.org/amperity/ken)
+[![Clojars Project](http://clojars.org/com.amperity/ken/latest-version.svg)](http://clojars.org/com.amperity/ken)
 
 ```clojure
 (require
@@ -244,13 +244,17 @@ of three possible states:
 - `true`: The span and its children will be kept. This decision overrides
   sampling logic in child spans.
 
-Note that the keep key can be set directly; for example, if you encounter an
-error and want to ensure that a span and its (subsequent) children are
-recorded, you can use `annotate` to set `keep?` to true.
+The `::trace/keep?` key can also be set directly; for example, if you encounter
+an error and want to ensure that a span and its (subsequent) children are
+recorded, you can use `annotate` to set the flag to true.
 
 For additional reading on sampling best practices, see
 [Honeycomb's article](https://docs.honeycomb.io/working-with-your-data/best-practices/sampling/)
 on the topic.
+
+**NOTE:** events which have been "sampled away" are still reported to tap
+subscribers! It is up to the individual subscribed functions to decide to drop
+the events or not.
 
 
 ## Integrations

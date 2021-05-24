@@ -1,4 +1,4 @@
-(defproject amperity/ken "0.1.0-SNAPSHOT"
+(defproject com.amperity/ken "0.1.0"
   :description "Observability library to serve as integration with a variety of event outputs."
   :url "https://github.com/amperity/ken"
   :license {:name "MIT License"
@@ -16,8 +16,6 @@
   :profiles
   {:repl
    {:source-paths ["dev"]
-    :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
-               "-XX:+UnlockDiagnosticVMOptions"
-               "-XX:+DebugNonSafepoints"]
+    :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
     :dependencies
     [[org.clojure/tools.namespace "1.1.0"]]}})
