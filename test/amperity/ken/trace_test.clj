@@ -5,30 +5,84 @@
     [clojure.test :refer [deftest testing is]]))
 
 
-(deftest sample?
-  (testing "Make a sampling decision when a sample rate is provided"
+(deftest trace-data
+  (testing "no context"
+    (trace/with-data nil
+      (is (nil? (trace/current-data)))
+      (is (nil? (trace/current-trace-id)))
+      (is (nil? (trace/current-span-id)))))
+  (testing "some properties"
+    (trace/with-data (atom {::trace/trace-id "thetrace"})
+      (is (= {::trace/trace-id "thetrace"} (trace/current-data)))
+      (is (= "thetrace" (trace/current-trace-id)))
+      (is (nil? (trace/current-span-id)))))
+  (testing "all properties"
+    (trace/with-data (atom {::trace/trace-id "thetrace"
+                            ::trace/span-id "thespan"
+                            ::trace/keep? false})
+      (is (= {::trace/trace-id "thetrace"
+              ::trace/span-id "thespan"
+              ::trace/keep? false}
+             (trace/current-data)))
+      (is (= "thetrace" (trace/current-trace-id)))
+      (is (= "thespan" (trace/current-span-id))))))
+
+
+(deftest trace-child
+  (testing "without context"
+    (with-redefs [trace/gen-trace-id (constantly "trace123")
+                  trace/gen-span-id (constantly "span456")]
+      (trace/with-data nil
+        (is (= {::trace/trace-id "trace123"
+                ::trace/span-id "span456"}
+               (trace/child-attrs))))))
+  (testing "explicit data"
+    (with-redefs [trace/gen-span-id (constantly "span789")]
+      (is (= {::trace/trace-id "trace123"
+              ::trace/parent-id "span456"
+              ::trace/span-id "span789"
+              ::trace/keep? false}
+             (trace/child-attrs
+               {::trace/trace-id "trace123"
+                ::trace/span-id "span456"
+                ::trace/keep? false}))))))
+
+
+(deftest sampling
+  (testing "random sampling"
     (is (some? (trace/sample? 1))
-        "the sampling decision should return true or false")))
-
-
-(deftest watch-span
-  (testing "Make sure the right sampling context is contained in new spans"
-    (trace/with-data (atom {::trace/keep? true})
-      (let [data {::event/label "foo"
-                  ::event/sample-rate 42}
-            span (trace/watch-span data)]
-        (is (contains? span ::trace/keep?)
-            "the new span should contain the `::trace/keep?` key if `::trace/keep?` is already true")
-        (is (true? (::trace/keep? span))
-            "`::trace/keep?` in the new span's context should be true if `::trace/keep?` is already true")
-        (is (not (contains? span ::event/sample-rate))
-            "the new span should not contain the `::event/sample-rate` key if `::trace/keep` is already true")))
-    (let [data {::event/label "foo"
-                ::event/sample-rate 1}
-          span (trace/watch-span data)]
-      (is (not (true? (::trace/keep? span)))
-          "when a sample rate is provided, and a sampling decision is made, the key `::trace/keep?` will never be true (only false or nil) in the new span when the trace is not being force-kept"))
-    (let [data {::event/label "foo"}
-          span (trace/watch-span data)]
-      (is (not (contains? span ::trace/keep?))
-          "When a sample rate is not provided, and the trace is not being force kept, `::trace/keep?` should not be present"))))
+        "should return true or false"))
+  (testing "maybe sample"
+    (testing "event without sampling properties"
+      (is (= {:foo 123} (trace/maybe-sample {:foo 123}))
+          "should be left alone"))
+    (testing "event with keep"
+      (is (= {:foo 123
+              ::trace/keep? true}
+             (trace/maybe-sample
+               {:foo 123
+                ::trace/keep? true}))
+          "should preserve other keys")
+      (is (= {::trace/keep? false}
+             (trace/maybe-sample
+               {::trace/keep? false
+                ::event/sample-rate 10}))
+          "should remove sample rate"))
+    (testing "event with sample rate"
+      (testing "selected to keep"
+        (with-redefs [trace/sample? (constantly true)]
+          (is (= {:bar "baz"
+                  ::event/sample-rate 10}
+                 (trace/maybe-sample
+                   {:bar "baz"
+                    ::event/sample-rate 10}))
+              "should not set keep flag")))
+      (testing "selected to discard"
+        (with-redefs [trace/sample? (constantly false)]
+          (is (= {:bar "baz"
+                  ::event/sample-rate 10
+                  ::trace/keep? false}
+                 (trace/maybe-sample
+                   {:bar "baz"
+                    ::event/sample-rate 10}))
+              "should set keep flag to false"))))))

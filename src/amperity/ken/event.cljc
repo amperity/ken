@@ -4,6 +4,8 @@
     [clojure.spec.alpha :as s]))
 
 
+;; ## Event Specs
+
 ;; Time the observed event began.
 (s/def ::time inst?)
 
@@ -29,7 +31,9 @@
 
 
 ;; An exception that occurred during the processing of the span.
-(s/def ::error (partial instance? Throwable))
+(s/def ::error
+  (partial instance? #?(:clj Throwable
+                        :cljs js/Error)))
 
 
 ;; Namespace the event was sent from.
@@ -66,3 +70,13 @@
                 ::thread
                 ::duration
                 ::sample-rate]))
+
+
+;; ## Utility Functions
+
+(defn now
+  "Return the current instant."
+  []
+  #?(:clj (java.time.Instant/now)
+     ;; TODO: should this be goog.DateTime instead?
+     :cljs (js/Date.)))

@@ -21,12 +21,13 @@
     The duration (in milliseconds) the span covers."
   (:require
     [alphabase.base32 :as b32]
-    [alphabase.bytes :refer [random-bytes]]
+    [alphabase.bytes :as b]
     [amperity.ken.event :as event]
-    #?(:clj [amperity.ken.util :as ku])
     [clojure.spec.alpha :as s]
     [clojure.string :as str]))
 
+
+;; ## Trace Attributes
 
 ;; Unique identifier for the overall trace of all linked events.
 (s/def ::trace-id string?)
@@ -44,6 +45,28 @@
 (s/def ::keep? boolean?)
 
 
+(defn- gen-id
+  "Generate a new trace or span identifier with `n` bytes of entropy."
+  [n]
+  (-> (b/random-bytes n)
+      (b32/encode)
+      (str/lower-case)))
+
+
+(defn gen-trace-id
+  "Generate a new trace identifier."
+  []
+  (gen-id 12))
+
+
+(defn gen-span-id
+  "Generate a new span identifier."
+  []
+  (gen-id 6))
+
+
+;; ## Dynamic Tracing Context
+
 (def ^:dynamic *data*
   "Dynamic context holding the data for the current trace. When inside a span,
   this should be bound to an atom containing a map with event data."
@@ -57,23 +80,41 @@
      ~@body))
 
 
+(defn current-data
+  "Return the current trace-id, span-id, and keep flag from the dynamic
+  context, if any."
+  []
+  (some-> *data* deref (select-keys [::trace-id ::span-id ::keep?])))
+
+
 (defn current-trace-id
   "Return the current trace-id from the trace context, if any."
   []
-  (some-> *data* deref ::trace-id))
+  (::trace-id (current-data)))
 
 
 (defn current-span-id
   "Return the current span-id from the trace context, if any."
   []
-  (some-> *data* deref ::span-id))
+  (::span-id (current-data)))
 
 
-(defn current-keep?
-  "Return the current sampling decision, if any."
-  []
-  (some-> *data* deref ::keep?))
+(defn child-attrs
+  "Return a map of trace attributes for a new child of the current span, if
+  any. Generates a new trace-id and span-id as necessary."
+  ([]
+   (child-attrs (current-data)))
+  ([data]
+   (merge
+     {::trace-id (or (::trace-id data) (gen-trace-id))
+      ::span-id (gen-span-id)}
+     (when-let [parent-id (::span-id data)]
+       {::parent-id parent-id})
+     (when-some [keep? (::keep? data)]
+       {::keep? keep?}))))
 
+
+;; ## Sampling Logic
 
 (defn sample?
   "Randomly decide whether to keep or drop a span using the given rate. A
@@ -82,49 +123,22 @@
   (zero? (rand-int sample-rate)))
 
 
-(defn- gen-id
-  "Generate a new trace or span identifier with `n` bytes of entropy."
-  [n]
-  (-> (random-bytes n)
-      (b32/encode)
-      (str/lower-case)))
+(defn maybe-sample
+  "Apply sampling logic to the event, returning an updated event map."
+  [event]
+  (cond
+    ;; Sampling decision has already been made, so disregard any sample rate.
+    (some? (::keep? event))
+    (dissoc event ::event/sample-rate)
 
+    ;; Sample rate is set without decision, so randomly sample. In the case
+    ;; where we decide to keep the event, _do not_ set `::keep?` so that
+    ;; descendents of this span can still perform their own sampling.
+    (::event/sample-rate event)
+    (if (false? (sample? (::event/sample-rate event)))
+      (assoc event ::keep? false)
+      event)
 
-(defn new-span
-  "Generate the base data for a new span from the current tracing context."
-  ([]
-   (new-span (current-trace-id) (current-span-id) (current-keep?)))
-  ([trace-id span-id keep?]
-   (merge
-     ;; TODO: automatically set time in cljs
-     {#?@(:clj [::event/time (ku/now)])
-      ::trace-id (or trace-id (gen-id 12))
-      ::span-id (gen-id 6)}
-     (when span-id
-       {::parent-id span-id})
-     (when (some? keep?)
-       {::keep? keep?}))))
-
-
-(defn watch-span
-  "Prepare a new span for use within the `watch` macro. This generally
-  shouldn't be called directly."
-  [data]
-  (when-not (::event/label data)
-    (throw (ex-info "Watch span data must include an event label"
-                    {:data data})))
-  (let [event (merge (new-span) data)]
-    (cond-> event
-      ;; Convert keyword labels into strings.
-      (keyword? (::event/label event))
-      (update ::event/label #(subs (str %) 1))
-
-      ;; Sampling decision has already been made, so disregard any sample rate.
-      (some? (::keep? event))
-      (dissoc ::event/sample-rate)
-
-      ;; Sample rate is set without decision, so randomly sample.
-      (and (nil? (::keep? event))
-           (::event/sample-rate event)
-           (false? (sample? (::event/sample-rate event))))
-      (assoc ::keep? false))))
+    ;; No sampling decision or rate, so return event as-is.
+    :else
+    event))

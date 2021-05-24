@@ -1,15 +1,7 @@
 (ns amperity.ken.util
   "Utilities for the observability code."
   (:require
-    [manifold.deferred :as d])
-  (:import
-    java.time.Instant))
-
-
-(defn now
-  "Return the current instant."
-  []
-  (Instant/now))
+    [manifold.deferred :as d]))
 
 
 (defn current-thread-name

@@ -16,8 +16,8 @@
   (testing "clearing"
     (is (nil? (ken.tap/clear!))))
   (testing "subscription"
-    (is (nil? (ken.tap/subscribe! ::any any?)))
-    (is (nil? (ken.tap/subscribe! ::prn prn))))
+    (is (= ::any (ken.tap/subscribe! ::any any?)))
+    (is (= ::prn (ken.tap/subscribe! ::prn prn))))
   (testing "unsubscription"
     (is (nil? (ken.tap/unsubscribe! ::any)))
     (is (nil? (ken.tap/unsubscribe! ::prn)))))
@@ -26,7 +26,7 @@
 (deftest publishing
   (let [results (atom [])
         record (partial swap! results conj)]
-    (is (nil? (ken.tap/subscribe! ::record record)))
+    (is (= ::record (ken.tap/subscribe! ::record record)))
     (is (zero? (ken.tap/queue-size)))
     (is (true? (ken.tap/send {:id 0})))
     (is (true? (ken.tap/send {:id 1})))
@@ -41,7 +41,7 @@
 (deftest blocking-drops
   (let [blocker (promise)
         record (fn [_] @blocker)]
-    (is (nil? (ken.tap/subscribe! ::blocking record)))
+    (is (= ::blocking (ken.tap/subscribe! ::blocking record)))
     (is (zero? (ken.tap/queue-size)))
     (is (true? (ken.tap/send {:id 0}))
         "immediate send should return true")

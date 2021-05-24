@@ -23,13 +23,14 @@
 
 (defn register!
   "Register a function for collecting context data to include in events.
+  Returns the key `k`.
 
   The key uniquely identifies the function and will replace any existing
   collector; it may also be used to remove it later with `unregister!`."
   [k f]
   {:pre [(keyword? k) (fn? f)]}
   (swap! collectors assoc k f)
-  nil)
+  k)
 
 
 (defn register-static!
@@ -41,8 +42,7 @@
    (register-static! ::static data))
   ([k data]
    (let [ctx (into {} (remove (comp nil? val)) data)]
-     (register! k (constantly ctx))
-     k)))
+     (register! k (constantly ctx)))))
 
 
 (defn unregister!

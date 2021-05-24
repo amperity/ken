@@ -20,14 +20,15 @@
 
 
 (defn subscribe!
-  "Subscribe a function to be called with all events sent to the tap.
+  "Subscribe a function to be called with all events sent to the tap. Returns
+  the key `k`.
 
   The key uniquely identifies the function and will replace any existing
   subscription; it may also be used to remove it later with `unsubscribe!`."
   [k f]
   {:pre [(keyword? k) (fn? f)]}
   (swap! subscriptions assoc k f)
-  nil)
+  k)
 
 
 (defn unsubscribe!
@@ -60,11 +61,14 @@
             (fn send-loop
               []
               (let [event (.take event-queue)]
-                (doseq [[k f] @subscriptions]
-                  (try
-                    (f event)
-                    (catch Throwable ex
-                      (log/error ex "Unhandled failure in tap function" k))))
+                (run!
+                  (fn publish
+                    [[k f]]
+                    (try
+                      (f event)
+                      (catch Throwable ex
+                        (log/error ex "Unhandled failure in tap function" k))))
+                  @subscriptions)
                 (recur)))
             "amperity.ken.tap/publisher")
       (.setDaemon true)

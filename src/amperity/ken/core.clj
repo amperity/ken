@@ -1,4 +1,23 @@
 (ns amperity.ken.core
+  "Core user API namespace for ken instrumentation.
+
+  There are really three significant phases where data is collected to form an
+  event or 'span':
+  1. At the _beginning_ of a span, to initialize the event data:
+     - base: label, time, level
+     - callsite: ns, line
+     - trace: trace-id, parent-id, span-id
+     - sampling: sample-rate, keep?
+  2. _During_ a span:
+     - using annotate, error, and time
+  3. At the _end_ of a span:
+     - context collection
+     - thread name
+     - duration
+
+  An `observe` call performs the first and third phases back-to-back and
+  immediately sends an event, while `watch` will wrap a body of code, providing
+  time to enrich it with extra data in phase two."
   (:refer-clojure :exclude [time])
   (:require
     [amperity.ken.context :as ctx]
@@ -9,6 +28,46 @@
     [clojure.string :as str]))
 
 
+;; ## Attribute Collection
+
+(defn ^:no-doc create-span
+  "Collect information and build an initial map of event data for a span. Any
+  provided data is merged into the result."
+  [data]
+  (let [event (merge
+                {::event/time (event/now)
+                 ::event/level :info}
+                (if (or (string? data) (keyword? data))
+                  {::event/label data}
+                  data))]
+    (if (keyword? (::event/label event))
+      ;; Convert keyword labels into strings.
+      (update event ::event/label #(subs (str %) 1))
+      event)))
+
+
+(defn ^:no-doc enrich-span
+  "Enrich a span by collecting attribute information from the contextual
+  environment."
+  [data]
+  (merge (ctx/collect)
+         {::event/thread (ku/current-thread-name)}
+         data))
+
+
+(defn- callsite-attrs
+  "Collect call-site information for inclusion in an event. Note that this is
+  called by macro, so it emits code forms."
+  [form]
+  (let [line (:line (meta form))]
+    (cond-> {}
+      *ns*
+      (assoc ::event/ns (list 'quote (symbol (str *ns*))))
+
+      line
+      (assoc ::event/line line))))
+
+
 (defmacro with-context
   "Evaluate the body of expressions with the given data merged into the local
   context."
@@ -16,6 +75,8 @@
   `(binding [ctx/*local* (merge ctx/*local* ~ctx)]
      ~@body))
 
+
+;; ## Event Observation
 
 (defmacro observe
   "Observe an event about the system. Returns true if the event was accepted or
@@ -26,19 +87,13 @@
   ([data]
    `(observe ~data nil))
   ([data timeout-ms]
-   `(when-let [data# ~data]
-      (let [event# (merge
-                     (ctx/collect)
-                     {::event/time (ku/now)
-                      ::event/level :info
-                      ::event/thread (ku/current-thread-name)
-                      ::event/ns '~(symbol (str *ns*))}
-                     ~(when-let [line (:line (meta &form))]
-                        {::event/line line})
-                     (when-let [trace-id# (trace/current-trace-id)]
-                       {::trace/trace-id trace-id#})
-                     data#)]
-        (tap/send event# ~timeout-ms)))))
+   `(let [event# (-> (create-span ~data)
+                     (merge
+                       ~(callsite-attrs &form)
+                       (trace/child-attrs))
+                     (trace/maybe-sample)
+                     (enrich-span))]
+      (tap/send event# ~timeout-ms))))
 
 
 (defmacro watch
@@ -66,17 +121,12 @@
   timing and tracing properties."
   [data & body]
   `(let [elapsed# (ku/stopwatch)
-         data# (merge {::event/level :info}
-                      (ctx/collect)
-                      ~(if (or (string? data) (keyword? data))
-                         {::event/label data}
-                         data)
-                      {::event/time (ku/now)
-                       ::event/thread (ku/current-thread-name)
-                       ::event/ns '~(symbol (str *ns*))}
-                      ~(when-let [line (:line (meta &form))]
-                         {::event/line line}))
-         state# (atom (trace/watch-span data#))]
+         data# (-> (create-span ~data)
+                   (merge
+                     ~(callsite-attrs &form)
+                     (trace/child-attrs))
+                   (trace/maybe-sample))
+         state# (atom data#)]
      (ku/wrap-finally
        (fn body#
          []
@@ -84,9 +134,13 @@
            ~@body))
        (fn report#
          []
-         (let [event# (assoc @state# ::event/duration @elapsed#)]
+         (let [event# (-> @state#
+                          (assoc ::event/duration @elapsed#)
+                          (enrich-span))]
            (tap/send event# nil))))))
 
+
+;; ## Event Annotation
 
 (defn annotate
   "Add fields to the enclosing span event."
@@ -101,7 +155,10 @@
                                      ::event/ns
                                      ::event/line
                                      ::event/thread
-                                     ::event/duration]))]
+                                     ::event/duration
+                                     ::trace/trace-id
+                                     ::trace/parent-id
+                                     ::trace/span-id]))]
     (throw (ex-info
              (str "Attempting to set event attributes which cannot be changed by annotations: "
                   (str/join " " (map name forbidden)))
@@ -109,15 +166,6 @@
   (when (thread-bound? #'trace/*data*)
     (when-let [trace trace/*data*]
       (swap! trace merge data))))
-
-
-(defn error
-  "Annotate the enclosing span with an error that was encountered during
-  execution. Sets the exception under the `:amperity.ken.event/error` key
-  and sets `:amperity.ken.event/fault?` to true."
-  [ex]
-  (annotate {::event/fault? true
-             ::event/error ex}))
 
 
 (defmacro time
@@ -133,3 +181,12 @@
        (fn report#
          []
          (annotate {~event-key @elapsed#})))))
+
+
+(defn error
+  "Annotate the enclosing span with an error that was encountered during
+  execution. Sets the exception under the `:amperity.ken.event/error` key
+  and sets `:amperity.ken.event/fault?` to true."
+  [ex]
+  (annotate {::event/fault? true
+             ::event/error ex}))
