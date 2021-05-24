@@ -185,11 +185,16 @@
 
 (defn error
   "Annotate the enclosing span with an error that was encountered during
-  execution. Sets the exception under the `:ken.event/error` key
-  and sets `:ken.event/fault?` to true."
+  execution.
+
+  Sets the following attributes:
+  - `:ken.event/level` to `:error`
+  - `:ken.event/fault?` to `true`
+  - `:ken.event/error` to the given exception"
   [ex]
   (when-not (instance? Throwable ex)
     (throw (IllegalArgumentException.
              "error annotations must be throwables")))
-  (annotate {::event/fault? true
+  (annotate {::event/level :error
+             ::event/fault? true
              ::event/error ex}))
