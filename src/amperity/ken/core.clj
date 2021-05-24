@@ -30,6 +30,19 @@
 
 ;; ## Attribute Collection
 
+(defn- callsite-attrs
+  "Collect call-site information for inclusion in an event. Note that this is
+  called by macro, so it emits code forms."
+  [form]
+  (let [line (:line (meta form))]
+    (cond-> {}
+      *ns*
+      (assoc ::event/ns (list 'quote (ns-name *ns*)))
+
+      line
+      (assoc ::event/line line))))
+
+
 (defn ^:no-doc create-span
   "Collect information and build an initial map of event data for a span. Any
   provided data is merged into the result."
@@ -53,19 +66,6 @@
   (merge (ctx/collect)
          {::event/thread (ku/current-thread-name)}
          data))
-
-
-(defn- callsite-attrs
-  "Collect call-site information for inclusion in an event. Note that this is
-  called by macro, so it emits code forms."
-  [form]
-  (let [line (:line (meta form))]
-    (cond-> {}
-      *ns*
-      (assoc ::event/ns (list 'quote (symbol (str *ns*))))
-
-      line
-      (assoc ::event/line line))))
 
 
 (defmacro with-context
@@ -188,5 +188,8 @@
   execution. Sets the exception under the `:amperity.ken.event/error` key
   and sets `:amperity.ken.event/fault?` to true."
   [ex]
+  (when-not (instance? Throwable ex)
+    (throw (IllegalArgumentException.
+             "error annotations must be throwables")))
   (annotate {::event/fault? true
              ::event/error ex}))

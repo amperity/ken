@@ -131,11 +131,12 @@ Above are two related spans, the second nested inside the first.
 
 ## Usage
 
-Enough theory, how do you actually use this? Releases are published on Clojars;
-to use the latest version with Leiningen, add the following to your project
-dependencies:
+Releases are published on Clojars; to use the latest version with Leiningen,
+add the following to your project dependencies:
 
 [![Clojars Project](http://clojars.org/com.amperity/ken/latest-version.svg)](http://clojars.org/com.amperity/ken)
+
+Enough theory, how do you actually use this?
 
 ```clojure
 (require
