@@ -128,16 +128,18 @@
                    (trace/maybe-sample))
          state# (atom data#)]
      (ku/wrap-finally
-       (^:once fn* body#
-         []
-         (trace/with-data state#
-           ~@body))
-       (^:once fn* report#
-         []
-         (let [event# (-> @state#
-                          (assoc ::event/duration @elapsed#)
-                          (enrich-span))]
-           (tap/send event# nil))))))
+       (^:once fn*
+        body#
+        []
+        (trace/with-data state#
+          ~@body))
+       (^:once fn*
+        report#
+        []
+        (let [event# (-> @state#
+                         (assoc ::event/duration @elapsed#)
+                         (enrich-span))]
+          (tap/send event# nil))))))
 
 
 ;; ## Event Annotation
@@ -175,12 +177,14 @@
   {:pre [(keyword? event-key)]}
   `(let [elapsed# (ku/stopwatch)]
      (ku/wrap-finally
-       (^:once fn* body#
-         []
-         ~@body)
-       (^:once fn* report#
-         []
-         (annotate {~event-key @elapsed#})))))
+       (^:once fn*
+        body#
+        []
+        ~@body)
+       (^:once fn*
+        report#
+        []
+        (annotate {~event-key @elapsed#})))))
 
 
 (defn error
