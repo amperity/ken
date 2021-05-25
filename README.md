@@ -38,18 +38,18 @@ happened in your code. Events will typically contain a selection of keys from
 `ken.event` to provide a basic foundation:
 
 ```clojure
-{:ken.event/time #inst "2020-03-27T21:22:27.003Z",
+{:ken.event/label "the thing",
+ :ken.event/time #inst "2020-03-27T21:22:27.003Z",
  :ken.event/duration 44.362681,
- :ken.event/label "the thing",
  :ken.event/message "Perform some routine activity",
  :ken.event/ns my.foo.thing,
  ,,,}
 ```
 
-Here we have an event about some process which started at the given time,
-lasted 44.3 milliseconds, and had some associated human-friendly metadata.
-Events may have many other attributes as well, including authentication
-context, custom identifiers, inputs and outputs, and more.
+Here we have an event about some labeled process which started at the given
+time, lasted 44.3 milliseconds, and had some associated human-friendly
+metadata.  Events may have many other attributes as well, including
+authentication context, custom identifiers, inputs and outputs, and more.
 
 ### Contexts
 
@@ -217,7 +217,7 @@ and `error` tools:
 ```
 
 This would produce a span event labeled `"a thing"` with a few potential
-additional attributes - a `::foo?` key set to true, an `:ken.event/error` key
+additional attributes - a `::foo?` key set to true, a `:ken.event/error` key
 with the caught exception, and a `::thinking` key holding the number of
 milliseconds spent in the `think-heavily` call.
 
@@ -246,7 +246,7 @@ reducing your total event volume.
 Sampling is controlled by two tracing keys, which can be specified in the
 initial `ken/watch` or in a later `ken/annotate` call.
 
-In order to opt into sampling for a specific span, you can seet the
+In order to opt into sampling for a specific span, you can set the
 `:ken.event/sample-rate` key. This is an integer value `n` that will cause, on
 average, about `1/n` of the events to be sampled. The rest will be marked to be
 discarded by consumers.
