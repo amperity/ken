@@ -142,3 +142,49 @@
     ;; No sampling decision or rate, so return event as-is.
     :else
     event))
+
+
+;; ## Header Propagation
+
+;; These functions provide a way to propagate tracing information in an HTTP
+;; header. This can be used to connect a trace on the front-end to spans in the
+;; API server, or pass trace context among HTTP-based backend services in a
+;; service-oriented architecture. Header values are versioned, and must start
+;; with the string `{version}-`.
+;;
+;; For version `0`, the header should be formed as `0-{trace}-{span}[-{flags}]`,
+;; where `trace` is the ken trace-id and `span` is the span-id of the calling
+;; operation. Flags are optional and consist of a sequence of letters. The `k`
+;; flag specifies that the trace should be forcibly kept, overriding sampling
+;; decisions.
+
+(def header-name
+  "Name of the header typically used to propagate Ken traces."
+  "X-Ken-Trace")
+
+
+(defn format-header
+  "Construct a tracing header for inclusion in an HTTP request. Returns the
+  constructed header string if the map of data provided has at least a trace-id
+  and span-id."
+  [data]
+  (let [trace-id (::trace-id data)
+        span-id (::span-id data)]
+    (when (and (not (str/blank? trace-id))
+               (not (str/blank? span-id)))
+      (str "0-" trace-id "-" span-id (when (::keep? data) "-k")))))
+
+
+(defn parse-header
+  "Parse a tracing header from an HTTP request. Header values must start with
+  `{version}-`. Returns a map of trace properties, or nil if the header is
+  absent or unrecognized."
+  [value]
+  (when (and (not (str/blank? value))
+             (str/starts-with? value "0-"))
+    (let [[_ trace-id span-id flags] (str/split value #"-")]
+      (merge
+        {::trace-id trace-id
+         ::span-id span-id}
+        (when (and flags (str/includes? flags "k"))
+          {::keep? true})))))
