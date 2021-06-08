@@ -9,6 +9,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 
 
+## [1.0.0] - 2021-06-08
+
+First production release! No changes since `0.3.0`, but this reflects full
+internal adoption in Amperity's codebase.
+
+
 ## [0.3.0] - 2021-05-31
 
 ### Changed
@@ -28,6 +34,7 @@ Initial open-source project release.
 - Extend test coverage of code.
 
 
-[Unreleased]: https://github.com/amperity/ken/compare/0.3.0...HEAD
+[Unreleased]: https://github.com/amperity/ken/compare/1.0.0...HEAD
+[1.0.0]: https://github.com/amperity/ken/compare/0.3.0...1.0.0
 [0.3.0]: https://github.com/amperity/ken/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/amperity/ken/compare/0.1.0...0.2.0
