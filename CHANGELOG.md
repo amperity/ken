@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+* Update dependencies to latest stable versions.
+
 
 ## [1.0.0] - 2021-06-08
 

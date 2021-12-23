@@ -8,13 +8,13 @@
   [[lein-cloverage "1.2.2"]]
 
   :dependencies
-  [[org.clojure/clojure "1.10.1"]
-   [mvxcvi/alphabase "2.1.0"]
-   [manifold "0.1.8"]]
+  [[org.clojure/clojure "1.10.3"]
+   [mvxcvi/alphabase "2.1.1"]
+   [manifold "0.2.3"]]
 
   :profiles
   {:repl
    {:source-paths ["dev"]
     :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
     :dependencies
-    [[org.clojure/tools.namespace "1.1.0"]]}})
+    [[org.clojure/tools.namespace "1.2.0"]]}})
