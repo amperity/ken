@@ -6,7 +6,7 @@ follows the conventions of [keepachangelog.com](http://keepachangelog.com/).
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 
-## [Unreleased]
+## [1.0.1] - 2021-12-27
 
 ### Changed
 
@@ -38,7 +38,7 @@ Initial open-source project release.
 - Extend test coverage of code.
 
 
-[Unreleased]: https://github.com/amperity/ken/compare/1.0.0...HEAD
+[1.0.1]: https://github.com/amperity/ken/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/amperity/ken/compare/0.3.0...1.0.0
 [0.3.0]: https://github.com/amperity/ken/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/amperity/ken/compare/0.1.0...0.2.0

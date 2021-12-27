@@ -1,4 +1,4 @@
-(defproject com.amperity/ken "1.0.1-SNAPSHOT"
+(defproject com.amperity/ken "1.0.1"
   :description "Observability library to serve as integration with a variety of event outputs."
   :url "https://github.com/amperity/ken"
   :license {:name "MIT License"
