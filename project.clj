@@ -10,11 +10,11 @@
   :dependencies
   [[org.clojure/clojure "1.10.3"]
    [mvxcvi/alphabase "2.1.1"]
-   [manifold "0.2.3"]]
+   [manifold "0.2.4"]]
 
   :profiles
   {:repl
    {:source-paths ["dev"]
     :jvm-opts ["-XX:-OmitStackTraceInFastThrow"]
     :dependencies
-    [[org.clojure/tools.namespace "1.2.0"]]}})
+    [[org.clojure/tools.namespace "1.3.0"]]}})
