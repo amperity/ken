@@ -20,8 +20,8 @@
   - `::event/duration`
     The duration (in milliseconds) the span covers."
   (:require
-    [alphabase.base32 :as b32]
     [alphabase.bytes :as b]
+    [alphabase.hex :as hex]
     [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [ken.event :as event]))
@@ -49,20 +49,20 @@
   "Generate a new trace or span identifier with `n` bytes of entropy."
   [n]
   (-> (b/random-bytes n)
-      (b32/encode)
+      (hex/encode)
       (str/lower-case)))
 
 
 (defn gen-trace-id
   "Generate a new trace identifier."
   []
-  (gen-id 12))
+  (gen-id 16))
 
 
 (defn gen-span-id
   "Generate a new span identifier."
   []
-  (gen-id 6))
+  (gen-id 8))
 
 
 ;; ## Dynamic Tracing Context
