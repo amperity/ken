@@ -1,10 +1,18 @@
-{:linters {:consistent-alias
-           {:level :warning
-            :aliases {clojure.java.io io
-                      clojure.spec.alpha s
-                      clojure.set set
-                      clojure.string str
-                      manifold.deferred d}}
+{:linters
+ {:consistent-alias
+  {:level :warning
+   :aliases {clojure.java.io io
+             clojure.spec.alpha s
+             clojure.set set
+             clojure.string str
+             manifold.deferred d}}
 
-           :unresolved-symbol
-           {:exclude [(ken.core-test/capture-observed [observed])]}}}
+  :unresolved-symbol
+  {:exclude [(ken.core-test/capture-observed [observed])]}
+
+  :deprecated-var
+  {:exclude
+   {ken.trace/format-header
+    {:namespaces [ken.trace-test]}
+    ken.trace/parse-header
+    {:namespaces [ken.trace-test]}}}}}
