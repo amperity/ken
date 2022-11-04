@@ -151,22 +151,69 @@
 ;; API server, or pass trace context among HTTP-based backend services in a
 ;; service-oriented architecture. Header values are versioned, and must start
 ;; with the string `{version}-`.
-;;
-;; For version `0`, the header should be formed as `0-{trace}-{span}[-{flags}]`,
-;; where `trace` is the ken trace-id and `span` is the span-id of the calling
-;; operation. Flags are optional and consist of a sequence of letters. The `k`
-;; flag specifies that the trace should be forcibly kept, overriding sampling
-;; decisions.
 
-(def header-name
-  "Name of the header typically used to propagate Ken traces."
+(def parent-header-name
+  "Name of the header used to propagate OpenTelemetry trace information.
+
+  See: https://www.w3.org/TR/trace-context/"
+  "traceparent")
+
+
+(defn format-parent-header
+  "Construct a tracing header for inclusion in an HTTP request. Returns the
+  formatted header string if the map of data provided has the necessary
+  information, otherwise nil.
+
+  See: https://www.w3.org/TR/trace-context/"
+  [data]
+  (when (and (not (str/blank? (::trace-id data)))
+             (not (str/blank? (::span-id data))))
+    (str "00-" (::trace-id data)
+         "-" (::span-id data)
+         "-" (if (::keep? data)
+               "01"
+               "00"))))
+
+
+(defn parse-parent-header
+  "Parse a parent tracing header from an HTTP request. Header values must start
+  with `{version}-`. Returns a map of trace properties, or nil if the header is
+  absent or unrecognized."
+  [value]
+  (when (and (not (str/blank? value))
+             (str/starts-with? value "00-"))
+    (let [[_ trace-id span-id flags-hex] (str/split value #"-" 4)]
+      (when (and (= 32 (count trace-id))
+                 (= 16 (count span-id))
+                 (= 2 (count flags-hex)))
+        (let [flags #?(:clj (try
+                              (Integer/parseInt flags-hex 16)
+                              (catch Exception _
+                                0))
+                       :cljs (let [v (js/parseInt flags-hex 16)]
+                               (if (js/isNaN v) 0 v)))]
+          (merge
+            {::trace-id trace-id
+             ::span-id span-id}
+            (when (pos? (bit-and flags 0x01))
+              {::keep? true})))))))
+
+
+;; ### Legacy Headers
+
+(def ^:deprecated header-name
+  "Name of the header typically used to propagate Ken traces.
+
+  DEPRECATED: Please switch to `parent-header-name`"
   "X-Ken-Trace")
 
 
-(defn format-header
+(defn ^:deprecated format-header
   "Construct a tracing header for inclusion in an HTTP request. Returns the
   constructed header string if the map of data provided has at least a trace-id
-  and span-id."
+  and span-id.
+
+  DEPRECATED: Please switch to `format-parent-header`"
   [data]
   (let [trace-id (::trace-id data)
         span-id (::span-id data)]
@@ -175,16 +222,35 @@
       (str "0-" trace-id "-" span-id (when (::keep? data) "-k")))))
 
 
-(defn parse-header
-  "Parse a tracing header from an HTTP request. Header values must start with
-  `{version}-`. Returns a map of trace properties, or nil if the header is
+(defn- parse-legacy-header
+  "Parse a legacy tracing header from an HTTP request. Header values must start
+  with `{version}-`. Returns a map of trace properties, or nil if the header is
   absent or unrecognized."
   [value]
-  (when (and (not (str/blank? value))
-             (str/starts-with? value "0-"))
-    (let [[_ trace-id span-id flags] (str/split value #"-")]
-      (merge
-        {::trace-id trace-id
-         ::span-id span-id}
-        (when (and flags (str/includes? flags "k"))
-          {::keep? true})))))
+  (let [[_ trace-id span-id flags] (str/split value #"-")]
+    (merge
+      {::trace-id trace-id
+       ::span-id span-id}
+      (when (and flags (str/includes? flags "k"))
+        {::keep? true}))))
+
+
+(defn ^:deprecated parse-header
+  "Parse a tracing header from an HTTP request. Header values must start with
+  `{version}-`. Returns a map of trace properties, or nil if the header is
+  absent or unrecognized.
+
+  DEPRECATED: Please switch to `parse-parent-header`"
+  [value]
+  (cond
+    ;; Nothing to parse.
+    (str/blank? value)
+    nil
+
+    ;; Single digit version prefix means this is a legacy Ken header.
+    (str/starts-with? value "0-")
+    (parse-legacy-header value)
+
+    ;; Double-digit hex version prefix means this is an OTel header.
+    (str/starts-with? value "00-")
+    (parse-parent-header value)))
