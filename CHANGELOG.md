@@ -19,6 +19,12 @@ improve interoperability.
   of base32).
   [#3](https://github.com/amperity/ken/pull/3)
 
+### Added
+- A new set of functions in `ken.trace` contain logic for working with the OTel
+  `traceparent` header instead of the custom `X-Ken-Trace` header. The previous
+  functions are now deprecated.
+  [#4](https://github.com/amperity/ken/pull/4)
+
 
 ## [1.0.2] - 2022-05-27
 
