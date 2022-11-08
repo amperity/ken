@@ -88,7 +88,7 @@
               "should set keep flag to false"))))))
 
 
-(deftest header-values
+(deftest legacy-header-values
   (testing "formatting"
     (is (nil? (trace/format-header {})))
     (is (nil? (trace/format-header
@@ -143,3 +143,66 @@
                 ::trace/keep? true}
                (trace/format-header)
                (trace/parse-header))))))
+
+
+(deftest parent-header-values
+  (testing "formatting"
+    (is (nil? (trace/format-parent-header {})))
+    (is (nil? (trace/format-parent-header
+                {::trace/span-id "00f067aa0ba902b7"}))
+        "missing trace-id should not create a header")
+    (is (nil? (trace/format-parent-header
+                {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+                 ::trace/span-id ""}))
+        "blank span-id should not create a header")
+    (is (= "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00"
+           (trace/format-parent-header
+             {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+              ::trace/span-id "00f067aa0ba902b7"})))
+    (is (= "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+           (trace/format-parent-header
+             {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+              ::trace/span-id "00f067aa0ba902b7"
+              ::trace/keep? true}))
+        "keep=true sets sampled flag")
+    (is (= "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00"
+           (trace/format-parent-header
+             {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+              ::trace/span-id "00f067aa0ba902b7"
+              ::trace/keep? false}))
+        "keep=false is not propagated in sampled flag"))
+  (testing "parsing"
+    (is (nil? (trace/parse-parent-header nil)))
+    (is (nil? (trace/parse-parent-header "")))
+    (is (nil? (trace/parse-parent-header "x-123-456")))
+    (is (= {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+            ::trace/span-id "00f067aa0ba902b7"}
+           (trace/parse-parent-header "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-00")))
+    (is (= {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+            ::trace/span-id "00f067aa0ba902b7"}
+           (trace/parse-parent-header "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-xy"))
+        "bad flags should be ignored")
+    (is (= {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+            ::trace/span-id "00f067aa0ba902b7"}
+           (trace/parse-parent-header "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-06"))
+        "unknown flags should be ignored")
+    (is (= {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+            ::trace/span-id "00f067aa0ba902b7"
+            ::trace/keep? true}
+           (trace/parse-parent-header "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"))
+        "sampled flag sets keep"))
+  (testing "round-trip"
+    (is (= {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+            ::trace/span-id "00f067aa0ba902b7"}
+           (-> {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+                ::trace/span-id "00f067aa0ba902b7"}
+               (trace/format-parent-header)
+               (trace/parse-parent-header))))
+    (is (= {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+            ::trace/span-id "00f067aa0ba902b7"
+            ::trace/keep? true}
+           (-> {::trace/trace-id "4bf92f3577b34da6a3ce929d0e0e4736"
+                ::trace/span-id "00f067aa0ba902b7"
+                ::trace/keep? true}
+               (trace/format-parent-header)
+               (trace/parse-parent-header))))))

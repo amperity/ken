@@ -8,6 +8,24 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+This release has **potentially breaking changes** if you have a dependency on
+the specific format of the trace and span identifiers. These changes move ken
+more in line with the [OpenTelemetry](https://opentelemetry.io/) standard to
+improve interoperability.
+
+### Changed
+- Trace identifiers are now 16 bytes of hexadecimal (previously they were 12
+  bytes of base32). Span identifiers are now 8 bytes of hex (previously 6 bytes
+  of base32).
+  [#3](https://github.com/amperity/ken/pull/3)
+
+### Added
+- A new set of functions in `ken.trace` contain logic for working with the OTel
+  `traceparent` header instead of the custom `X-Ken-Trace` header. The previous
+  functions are now deprecated.
+  [#4](https://github.com/amperity/ken/pull/4)
+
+
 ## [1.0.2] - 2022-05-27
 
 ### Changed
