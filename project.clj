@@ -1,4 +1,4 @@
-(defproject com.amperity/ken "1.0.3-SNAPSHOT"
+(defproject com.amperity/ken "1.1.0"
   :description "Observability library to serve as integration with a variety of event outputs."
   :url "https://github.com/amperity/ken"
   :license {:name "MIT License"
@@ -8,7 +8,7 @@
   [[lein-cloverage "1.2.2"]]
 
   :dependencies
-  [[org.clojure/clojure "1.10.3"]
+  [[org.clojure/clojure "1.11.1"]
    [mvxcvi/alphabase "2.1.1"]
    [manifold "0.2.4"]]
 

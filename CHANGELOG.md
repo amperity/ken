@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+...
+
+
+## [1.1.0] - 2022-11-08
+
 This release has **potentially breaking changes** if you have a dependency on
 the specific format of the trace and span identifiers. These changes move ken
 more in line with the [OpenTelemetry](https://opentelemetry.io/) standard to
@@ -63,7 +68,8 @@ Initial open-source project release.
 - Extend test coverage of code.
 
 
-[Unreleased]: https://github.com/amperity/ken/compare/1.0.2...HEAD
+[Unreleased]: https://github.com/amperity/ken/compare/1.1.0...HEAD
+[1.1.0]: https://github.com/amperity/ken/compare/1.0.2...1.1.0
 [1.0.2]: https://github.com/amperity/ken/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/amperity/ken/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/amperity/ken/compare/0.3.0...1.0.0
