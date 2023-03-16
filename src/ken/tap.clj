@@ -50,27 +50,37 @@
   (ArrayBlockingQueue. 1024))
 
 
+(deftype Barrier
+  [seen])
+
+
+(defn- publish-loop
+  "Recurrent function which takes events from the queue and publishes them to
+  subscribed consumers."
+  []
+  (let [event (.take event-queue)]
+    (if (instance? Barrier event)
+      (locking event
+        (reset! (.-seen ^Barrier event) true)
+        (.notifyAll ^Object event))
+      (run!
+        (fn publish
+          [[_k f]]
+          (try
+            (f event)
+            (catch Throwable _
+              ;; Swallow unhandled error in subscriber
+              ;; TODO: how to notify the user?
+              nil)))
+        @subscriptions))
+    (recur)))
+
+
 (def ^:private publisher
-  "Background thread which takes events from the queue and publishes them to
-  subscribed functions. The thread is only started once the first event has
-  been sent."
+  "Background thread which publishes events in the queue. The thread is only
+  started once the first event has been sent."
   (delay
-    (doto (Thread.
-            (fn send-loop
-              []
-              (let [event (.take event-queue)]
-                (run!
-                  (fn publish
-                    [[_k f]]
-                    (try
-                      (f event)
-                      (catch Throwable _
-                        ;; Swallow unhandled error in subscriber
-                        ;; TODO: how to notify the user?
-                        nil)))
-                  @subscriptions)
-                (recur)))
-            "ken.tap/publisher")
+    (doto (Thread. ^Runnable publish-loop "ken.tap/publisher")
       (.setDaemon true)
       (.start))))
 
@@ -95,6 +105,21 @@
   "Return the number of events currently in the queue."
   []
   (.size event-queue))
+
+
+(defn flush!
+  "Wait up to `timeout-ms` for all events currently in the tap queue to be
+  processed. Returns true if the flush succeeded or false if it timed out."
+  [timeout-ms]
+  (let [start (System/nanoTime)
+        barrier (Barrier. (atom false))]
+    (locking barrier
+      (if (send barrier timeout-ms)
+        (let [elapsed (long (/ (- (System/nanoTime) start) 1e6))
+              remaining (- timeout-ms elapsed)]
+          (.wait barrier remaining)
+          @(.-seen barrier))
+        false))))
 
 
 (defn drain!
