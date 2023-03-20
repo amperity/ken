@@ -123,7 +123,7 @@
 
 
 (defn drain!
-  "Drain the current event-queue to empty it. Mostly useful for testing."
+  "Clear the current event-queue to empty it. Mostly useful for testing."
   []
   (.clear event-queue)
   nil)

@@ -11,6 +11,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ...
 
 
+## [1.2.0] - 2023-03-20
+
+### Changed
+- Update dependency versions.
+
+### Added
+- The `ken.tap/flush!` function allows callers to block until all
+  previously-sent events have been processed.
+  [#5](https://github.com/amperity/ken/issues/5)
+  [PR#6](https://github.com/amperity/ken/pull/6)
+
+
 ## [1.1.0] - 2022-11-08
 
 This release has **potentially breaking changes** if you have a dependency on
@@ -22,13 +34,13 @@ improve interoperability.
 - Trace identifiers are now 16 bytes of hexadecimal (previously they were 12
   bytes of base32). Span identifiers are now 8 bytes of hex (previously 6 bytes
   of base32).
-  [#3](https://github.com/amperity/ken/pull/3)
+  [PR#3](https://github.com/amperity/ken/pull/3)
 
 ### Added
 - A new set of functions in `ken.trace` contain logic for working with the OTel
   `traceparent` header instead of the custom `X-Ken-Trace` header. The previous
   functions are now deprecated.
-  [#4](https://github.com/amperity/ken/pull/4)
+  [PR#4](https://github.com/amperity/ken/pull/4)
 
 
 ## [1.0.2] - 2022-05-27
@@ -68,7 +80,8 @@ Initial open-source project release.
 - Extend test coverage of code.
 
 
-[Unreleased]: https://github.com/amperity/ken/compare/1.1.0...HEAD
+[Unreleased]: https://github.com/amperity/ken/compare/1.2.0...HEAD
+[1.2.0]: https://github.com/amperity/ken/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/amperity/ken/compare/1.0.2...1.1.0
 [1.0.2]: https://github.com/amperity/ken/compare/1.0.1...1.0.2
 [1.0.1]: https://github.com/amperity/ken/compare/1.0.0...1.0.1
