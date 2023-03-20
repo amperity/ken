@@ -12,19 +12,6 @@
     (test-case)))
 
 
-(defn await-tap
-  "Wait for the tap to finish sending events for up to `n` attempts."
-  [n]
-  (loop [attempts n]
-    (when (and (pos? attempts) (pos? (tap/queue-size)))
-      (Thread/sleep 10)
-      (recur (dec attempts))))
-  (when (pos? (tap/queue-size))
-    (throw (IllegalStateException.
-             (str "tap queue still has " (tap/queue-size)
-                  " events after " (* n 10) " ms")))))
-
-
 (deftest subscription-lifecycle
   (testing "clearing"
     (is (nil? (tap/clear!))))
@@ -41,7 +28,7 @@
                  ::err
                  (fn [_] (throw (RuntimeException. "BOOM"))))))
   (is (true? (tap/send {:a "thing"})))
-  (await-tap 10))
+  (is (tap/flush! 10)))
 
 
 (deftest publishing
@@ -52,7 +39,7 @@
     (is (true? (tap/send {:id 0})))
     (is (true? (tap/send {:id 1})))
     ;; Wait for all events to be published.
-    (await-tap 10)
+    (is (tap/flush! 10))
     (is (= [{:id 0} {:id 1}] @results))))
 
 
