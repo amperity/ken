@@ -8,7 +8,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-...
+### Changed
+- Switch from Leiningen to tools.deps for building the library.
 
 
 ## [1.2.0] - 2023-03-20
