@@ -1,11 +1,10 @@
 /target
-/checkouts
 /.idea
 *.iml
 *.jar
 *.class
+*.asc
 .lein-*
 .nrepl-port
 .clj-kondo/.cache
-pom.xml
-pom.xml.asc
+.cpcache
