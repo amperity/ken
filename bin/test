@@ -7,7 +7,7 @@ if [[ $1 = check ]]; then
     exec clojure -M:check
 elif [[ $1 = coverage ]]; then
     shift
-    exec clojure -M:coverage "$@"
+    exec clojure -M:manifold:coverage "$@"
 else
-    exec clojure -M:test "$@"
+    exec clojure -M:manifold:test "$@"
 fi
