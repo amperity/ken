@@ -1,7 +1,12 @@
 (ns ^:no-doc ken.util
   "Utilities for the observability code."
   (:require
-    [manifold.deferred :as d]))
+    [manifold.deferred :as d])
+  (:import
+    (java.util.concurrent
+      CompletionStage)
+    (java.util.function
+      BiConsumer)))
 
 
 (defn current-thread-name
@@ -20,7 +25,7 @@
 
 (defn wrap-finally
   "Ensure the function `f` is run after the body run by `body-fn` completes. If
-  `body-fn` returns a deferred vaule, `f` will run once it is realized."
+  `body-fn` returns an asynchronous value, `f` will run once it is realized."
   [body-fn f]
   (let [final (bound-fn* f)
         [result err] (try
@@ -30,9 +35,11 @@
     (cond
       ;; An error was thrown synchronously, so invoke `final` and re-throw.
       err
-      (do (final) (throw err))
+      (do
+        (final)
+        (throw err))
 
-      ;; A deferred value was returned. In this case, we need to ensure that
+      ;; A manifold deferred value was returned. We need to ensure that
       ;; when the deferred is realized, the thread that delivers its value to
       ;; any chained callbacks retains the _original_ bindings from the context
       ;; where `wrap-finally` was called. Without this logic the trace bindings
@@ -49,6 +56,19 @@
             (d/error! d' e)))
         (d/finally d' final))
 
+      ;; A native Java async stage was returned, so attach a when-complete
+      ;; callback to execute the final logic.
+      (instance? CompletionStage result)
+      (let [stage ^CompletionStage result]
+        (.whenComplete
+          stage
+          (reify BiConsumer
+            (accept
+              [_ _ _]
+              (final)))))
+
       ;; A value was returned synchronously, so invoke `final` and return.
       :else
-      (do (final) result))))
+      (do
+        (final)
+        result))))
