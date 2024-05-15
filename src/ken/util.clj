@@ -1,7 +1,5 @@
 (ns ^:no-doc ken.util
   "Utilities for the observability code."
-  (:require
-    [manifold.deferred :as d])
   (:import
     (java.util.concurrent
       CompletionStage)
@@ -21,6 +19,18 @@
   []
   (let [start (System/nanoTime)]
     (delay (/ (- (System/nanoTime) start) 1e6))))
+
+
+(defmacro ^:private when-manifold
+  "Evaluates forms in `body` if `manifold` is available, otherwise evaluates to
+  nil. The deferred ns is aliased as `d` for convenience."
+  [& body]
+  (when (try
+          (require '[manifold.deferred :as d])
+          true
+          (catch Exception _
+            false))
+    `(do ~@body)))
 
 
 (defn wrap-finally
@@ -44,17 +54,19 @@
       ;; any chained callbacks retains the _original_ bindings from the context
       ;; where `wrap-finally` was called. Without this logic the trace bindings
       ;; wind up getting propagated incorrectly to chained functions.
-      (d/deferred? result)
-      (let [d' (d/deferred)]
-        (d/on-realized
-          result
-          (bound-fn bound-success
-            [x]
-            (d/success! d' x))
-          (bound-fn bound-error
-            [e]
-            (d/error! d' e)))
-        (d/finally d' final))
+      (when-manifold
+        (d/deferred? result))
+      (when-manifold
+        (let [d' (d/deferred)]
+          (d/on-realized
+            result
+            (bound-fn bound-success
+              [x]
+              (d/success! d' x))
+            (bound-fn bound-error
+              [e]
+              (d/error! d' e)))
+          (d/finally d' final)))
 
       ;; A native Java async stage was returned, so attach a when-complete
       ;; callback to execute the final logic.
