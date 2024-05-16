@@ -12,7 +12,6 @@
           io.github.slipset/deps-deploy {:git/sha "07022b92d768590ab25b9ceb619ef17d2922da9a"}}
    :ns-default build}
 
-
   :manifold
   {:extra-deps {manifold/manifold {:mvn/version "0.4.3"}}}
 
