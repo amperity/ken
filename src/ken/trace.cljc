@@ -22,28 +22,30 @@
   (:require
     [alphabase.bytes :as b]
     [alphabase.hex :as hex]
-    [clojure.spec.alpha :as s]
     [clojure.string :as str]
     [ken.event :as event]))
 
 
-;; ## Trace Attributes
+(def schemas
+  "Event attributes for trace information as Malli-compatible schemas."
+  {;; Unique identifier for the overall trace of all linked events.
+   ::trace-id
+   :string
 
-;; Unique identifier for the overall trace of all linked events.
-(s/def ::trace-id string?)
+   ;; Identifier for this specific span event.
+   ::span-id
+   :string
+
+   ;; Identifier for the parent of this span.
+   ::parent-id
+   :string
+
+   ;; A boolean to represent a sampling decision.
+   ::keep?
+   :boolean})
 
 
-;; Identifier for this specific span event.
-(s/def ::span-id string?)
-
-
-;; Identifier for the parent of this span.
-(s/def ::parent-id string?)
-
-
-;; A boolean to represent a sampling decision.
-(s/def ::keep? boolean?)
-
+;; ## Trace Identifiers
 
 (defn- gen-id
   "Generate a new trace or span identifier with `n` bytes of entropy."
