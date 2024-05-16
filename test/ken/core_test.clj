@@ -5,7 +5,11 @@
     [ken.event :as event]
     [ken.tap :as tap]
     [ken.trace :as trace]
-    [manifold.deferred :as d]))
+    [manifold.deferred :as d])
+  (:import
+    (java.util.concurrent
+      CompletableFuture
+      CompletionStage)))
 
 
 (defmacro capture-observed
@@ -53,8 +57,8 @@
         (is (= (::trace/span-id span) (::trace/parent-id event)))))))
 
 
-(deftest watch-spans
-  (testing "basic wrapping"
+(deftest watch-sync-span
+  (testing "with result"
     (capture-observed
       (let [result (ken/watch :alpha
                      :omega)]
@@ -67,7 +71,23 @@
           (is (number? (::event/duration span1)))
           (is (string? (::trace/trace-id span1)))
           (is (string? (::trace/span-id span1)))))))
-  (testing "deferred wrapping"
+  (testing "with error"
+    (capture-observed
+      (is (thrown? RuntimeException
+            (ken/watch :alpha
+              (throw (RuntimeException. "BOOM"))))
+          "should rethrow the exception")
+      (is (= 1 (count @observed))
+          "should observe one event")
+      (let [span1 (first @observed)]
+        (is (= "alpha" (::event/label span1)))
+        (is (number? (::event/duration span1)))
+        (is (string? (::trace/trace-id span1)))
+        (is (string? (::trace/span-id span1)))))))
+
+
+(deftest watch-deferred-span
+  (testing "with result"
     (capture-observed
       (let [d (d/deferred)
             result (ken/watch "one"
@@ -86,56 +106,123 @@
           (is (number? (::event/duration span1)))
           (is (string? (::trace/trace-id span1)))
           (is (string? (::trace/span-id span1)))))))
-  (testing "nested watches"
+  (testing "with error"
     (capture-observed
-      (ken/watch "foo"
-        (dotimes [_ 2]
-          (ken/watch "bar"
-            "do the thing")))
-      (is (= 3 (count @observed))
-          "should observe all events")
-      (let [[bar1 bar2 foo :as spans] @observed]
-        (is (= ["bar" "bar" "foo"] (map ::event/label spans))
-            "events occur in expected order")
-        (is (string? (::trace/trace-id foo))
-            "root span has a trace-id")
-        (is (apply = (map ::trace/trace-id spans))
-            "all spans share the same trace")
-        (is (= (::trace/span-id foo) (::trace/parent-id bar1))
-            "bar1 is a child of foo")
-        (is (= (::trace/span-id foo) (::trace/parent-id bar2))
-            "bar2 is a child of foo")
-        (is (not= (::trace/span-id bar1) (::trace/span-id bar2))
-            "bar spans have distinct ids")
-        (is (not (.isAfter (::event/time foo) (::event/time bar1)))
-            "foo starts at or before bar1")))))
+      (let [d (d/deferred)
+            result (ken/watch "two"
+                     d)]
+        (is (d/deferred? result)
+            "should return a watched deferred value")
+        (is (empty? @observed)
+            "should not have observed any events yet")
+        (d/error! d (RuntimeException. "BOOM"))
+        (is (thrown? RuntimeException
+              @result)
+            "exception should propagate to result deferred")
+        (is (= 1 (count @observed))
+            "should observe one event after realization")
+        (let [span1 (first @observed)]
+          (is (= "two" (::event/label span1)))
+          (is (number? (::event/duration span1)))
+          (is (string? (::trace/trace-id span1)))
+          (is (string? (::trace/span-id span1))))))))
+
+
+(deftest watch-completable-span
+  (testing "with result"
+    (capture-observed
+      (let [cf (CompletableFuture.)
+            result (ken/watch "happy"
+                     cf)]
+        (is (not (identical? cf result))
+            "should not return the same value")
+        (is (instance? CompletionStage result)
+            "should return a watched completion stage")
+        (is (empty? @observed)
+            "should not have observed any events yet")
+        (.complete cf :fin)
+        (is (= :fin @result)
+            "evaluation should chain to result")
+        (is (= 1 (count @observed))
+            "should observe one event after realization")
+        (let [span1 (first @observed)]
+          (is (= "happy" (::event/label span1)))
+          (is (number? (::event/duration span1)))
+          (is (string? (::trace/trace-id span1)))
+          (is (string? (::trace/span-id span1)))))))
+  (testing "with error"
+    (capture-observed
+      (let [cf (CompletableFuture.)
+            result (ken/watch "sad"
+                     cf)]
+        (is (not (identical? cf result))
+            "should not return the same value")
+        (is (instance? CompletionStage result)
+            "should return a watched completion stage")
+        (is (empty? @observed)
+            "should not have observed any events yet")
+        (.completeExceptionally cf (RuntimeException. "BOOM"))
+        (is (thrown? Exception
+              @result)
+            "exception should propagate to result")
+        (is (= 1 (count @observed))
+            "should observe one event after realization")
+        (let [span1 (first @observed)]
+          (is (= "sad" (::event/label span1)))
+          (is (number? (::event/duration span1)))
+          (is (string? (::trace/trace-id span1)))
+          (is (string? (::trace/span-id span1))))))))
+
+
+(deftest nested-watches
+  (capture-observed
+    (ken/watch "foo"
+      (dotimes [_ 2]
+        (ken/watch "bar"
+          "do the thing")))
+    (is (= 3 (count @observed))
+        "should observe all events")
+    (let [[bar1 bar2 foo :as spans] @observed]
+      (is (= ["bar" "bar" "foo"] (map ::event/label spans))
+          "events occur in expected order")
+      (is (string? (::trace/trace-id foo))
+          "root span has a trace-id")
+      (is (apply = (map ::trace/trace-id spans))
+          "all spans share the same trace")
+      (is (= (::trace/span-id foo) (::trace/parent-id bar1))
+          "bar1 is a child of foo")
+      (is (= (::trace/span-id foo) (::trace/parent-id bar2))
+          "bar2 is a child of foo")
+      (is (not= (::trace/span-id bar1) (::trace/span-id bar2))
+          "bar spans have distinct ids")
+      (is (not (.isAfter (::event/time foo) (::event/time bar1)))
+          "foo starts at or before bar1"))))
 
 
 (deftest watch-sampling
-  (testing "nested watches"
-    (capture-observed
-      (with-redefs [trace/sample? (constantly false)]
-        (ken/watch {::event/label "outer"
-                    ::event/sample-rate 5}
-          (ken/watch "inner"
-            "do the thing"))
-        (is (= 2 (count @observed))
-            "should observe all events")
-        (let [[inner outer :as spans] @observed]
-          (is (= ["inner" "outer"] (map ::event/label spans))
-              "events occur in expected order")
-          (is (string? (::trace/trace-id outer))
-              "root span has a trace-id")
-          (is (apply = (map ::trace/trace-id spans))
-              "all spans share the same trace")
-          (is (= (::trace/span-id outer) (::trace/parent-id inner))
-              "inner is a child of outer")
-          (is (not= (::trace/span-id outer) (::trace/span-id inner))
-              "spans have distinct ids")
-          (is (false? (::trace/keep? outer))
-              "outer span is sampled away")
-          (is (false? (::trace/keep? inner))
-              "inner span inherits sampling decision"))))))
+  (capture-observed
+    (with-redefs [trace/sample? (constantly false)]
+      (ken/watch {::event/label "outer"
+                  ::event/sample-rate 5}
+        (ken/watch "inner"
+          "do the thing"))
+      (is (= 2 (count @observed))
+          "should observe all events")
+      (let [[inner outer :as spans] @observed]
+        (is (= ["inner" "outer"] (map ::event/label spans))
+            "events occur in expected order")
+        (is (string? (::trace/trace-id outer))
+            "root span has a trace-id")
+        (is (apply = (map ::trace/trace-id spans))
+            "all spans share the same trace")
+        (is (= (::trace/span-id outer) (::trace/parent-id inner))
+            "inner is a child of outer")
+        (is (not= (::trace/span-id outer) (::trace/span-id inner))
+            "spans have distinct ids")
+        (is (false? (::trace/keep? outer))
+            "outer span is sampled away")
+        (is (false? (::trace/keep? inner))
+            "inner span inherits sampling decision")))))
 
 
 (deftest annotations
