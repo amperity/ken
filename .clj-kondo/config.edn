@@ -15,8 +15,4 @@
    {ken.trace/format-header
     {:namespaces [ken.trace-test]}
     ken.trace/parse-header
-    {:namespaces [ken.trace-test]}}}}
-
- :config-in-call
- {ken.util/when-manifold
-  {:linters {:unresolved-namespace {:exclude [d]}}}}}
+    {:namespaces [ken.trace-test]}}}}}
