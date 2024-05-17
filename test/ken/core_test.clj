@@ -225,6 +225,53 @@
             "inner span inherits sampling decision")))))
 
 
+(deftest manifold-trace-propagation
+  ;; This test covers a specific issue that can cause incorrect span
+  ;; hierarchies in manifold. Making `then` a `bound-fn` fixes this problem,
+  ;; but ideally this should just work correctly out of the box.
+  (capture-observed
+    (let [gate (promise)
+          work (ken/watch "top"
+                 (d/chain
+                   ;; A watch macro is wrapped around a future computation, which captures
+                   ;; its thread bindings.
+                   (ken/watch "one"
+                     (d/future
+                       ;; The forms evaluated here know they are in span 'one' from the
+                       ;; dynamic trace context.
+                       @gate
+                       1))
+                   ;; In manifold, the thread which completes a deferred that has chained
+                   ;; computations is also responsible for invoking those callbacks. This
+                   ;; function gets called by the `d/future` above.
+                   (fn then
+                     [x]
+                     ;; At this point, the future _still has the thread bindings from
+                     ;; span one_, which means that - without further machinery - span
+                     ;; 'two' here will appear to be a child of 'one', rather than a
+                     ;; sibling. This is wrong.
+                     (ken/watch "two"
+                       (inc x)))))]
+      (deliver gate :go)
+      (is (= 2 @work)))
+    (is (= 3 (count @observed)))
+    (is (= ["one" "two" "top"]
+           (map ::event/label @observed)))
+    (let [[one two top] @observed]
+      (is (= (::trace/trace-id top)
+             (::trace/trace-id one))
+          "first child span should belong to same trace")
+      (is (= (::trace/trace-id top)
+             (::trace/trace-id two))
+          "second child span should belong to same trace")
+      (is (= (::trace/span-id top)
+             (::trace/parent-id one))
+          "first child should have top as parent")
+      (is (= (::trace/span-id top)
+             (::trace/parent-id two))
+          "second child should have top as parent"))))
+
+
 (deftest annotations
   (testing "annotate"
     (testing "with bad arguments"
