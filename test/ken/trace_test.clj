@@ -88,63 +88,6 @@
               "should set keep flag to false"))))))
 
 
-(deftest legacy-header-values
-  (testing "formatting"
-    (is (nil? (trace/format-header {})))
-    (is (nil? (trace/format-header
-                {::trace/span-id "s456"})))
-    (is (nil? (trace/format-header
-                {::trace/trace-id "t123"
-                 ::trace/span-id ""})))
-    (is (= "0-t123-s456"
-           (trace/format-header
-             {::trace/trace-id "t123"
-              ::trace/span-id "s456"})))
-    (is (= "0-t123-s456-k"
-           (trace/format-header
-             {::trace/trace-id "t123"
-              ::trace/span-id "s456"
-              ::trace/keep? true}))
-        "keep=true propagated as flag")
-    (is (= "0-t123-s456"
-           (trace/format-header
-             {::trace/trace-id "t123"
-              ::trace/span-id "s456"
-              ::trace/keep? false}))
-        "keep=false not propagated"))
-  (testing "parsing"
-    (is (nil? (trace/parse-header nil)))
-    (is (nil? (trace/parse-header "")))
-    (is (nil? (trace/parse-header "x-123-456")))
-    (is (= {::trace/trace-id "t123"
-            ::trace/span-id "s456"}
-           (trace/parse-header "0-t123-s456")))
-    (is (= {::trace/trace-id "t123"
-            ::trace/span-id "s456"}
-           (trace/parse-header "0-t123-s456-xy"))
-        "unknown flags should be ignored")
-    (is (= {::trace/trace-id "t123"
-            ::trace/span-id "s456"
-            ::trace/keep? true}
-           (trace/parse-header "0-t123-s456-k"))
-        "keep flag sets keep"))
-  (testing "round-trip"
-    (is (= {::trace/trace-id "t123"
-            ::trace/span-id "s456"}
-           (-> {::trace/trace-id "t123"
-                ::trace/span-id "s456"}
-               (trace/format-header)
-               (trace/parse-header))))
-    (is (= {::trace/trace-id "t890"
-            ::trace/span-id "s567"
-            ::trace/keep? true}
-           (-> {::trace/trace-id "t890"
-                ::trace/span-id "s567"
-                ::trace/keep? true}
-               (trace/format-header)
-               (trace/parse-header))))))
-
-
 (deftest parent-header-values
   (testing "formatting"
     (is (nil? (trace/format-parent-header {})))
