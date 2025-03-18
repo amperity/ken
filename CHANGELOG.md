@@ -10,6 +10,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - Switch from Leiningen to tools.deps for building the library.
+- Simplify by dropping the `mvxcvi/alphabase` dependency in favor of inlining
+  the hex identifier generation.
 
 
 ## [1.2.0] - 2023-03-20

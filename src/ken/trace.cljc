@@ -20,8 +20,6 @@
   - `::event/duration`
     The duration (in milliseconds) the span covers."
   (:require
-    [alphabase.bytes :as b]
-    [alphabase.hex :as hex]
     [clojure.string :as str]
     [ken.event :as event]))
 
@@ -47,24 +45,37 @@
 
 ;; ## Trace Identifiers
 
-(defn- gen-id
-  "Generate a new trace or span identifier with `n` bytes of entropy."
+(defn- rand-hex
+  "Generate a hexadecimal string with `n` bytes of entropy."
   [n]
-  (-> (b/random-bytes n)
-      (hex/encode)
-      (str/lower-case)))
+  (let [data #?(:clj (byte-array n)
+                :cljs (js/Uint8Array. (js/ArrayBuffer. n)))
+        hex #?(:clj (object-array n)
+               :cljs (make-array n))]
+    #?(:clj (.nextBytes (java.security.SecureRandom.) data)
+       :cljs (js/crypto.getRandomValues data))
+    (dotimes [i n]
+      (let [b (aget data i)
+            b (if (neg? b) (+ 256 b) b)
+            h #?(:clj (Integer/toHexString b)
+                 :cljs (.toString b 16))
+            h (if (= 1 (count h))
+                (str "0" h)
+                h)]
+        (aset hex i h)))
+    (str/lower-case (str/join hex))))
 
 
 (defn gen-trace-id
   "Generate a new trace identifier."
   []
-  (gen-id 16))
+  (rand-hex 16))
 
 
 (defn gen-span-id
   "Generate a new span identifier."
   []
-  (gen-id 8))
+  (rand-hex 8))
 
 
 ;; ## Dynamic Tracing Context
