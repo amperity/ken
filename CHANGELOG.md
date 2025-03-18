@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+...
+
+
+## [2.0.47] - 2025-03-18
+
 This major release contains a number of significant changes to simplify the
 library. The core functionality is unchanged, but several dependencies have
 been removed in order to streamline the code. These changes also make the
@@ -95,7 +100,8 @@ Initial open-source project release.
 - Extend test coverage of code.
 
 
-[Unreleased]: https://github.com/amperity/ken/compare/1.2.0...HEAD
+[Unreleased]: https://github.com/amperity/ken/compare/2.0.47...HEAD
+[2.0.47]: https://github.com/amperity/ken/compare/1.2.0...2.0.47
 [1.2.0]: https://github.com/amperity/ken/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/amperity/ken/compare/1.0.2...1.1.0
 [1.0.2]: https://github.com/amperity/ken/compare/1.0.1...1.0.2
