@@ -286,6 +286,6 @@ the events or not.
 
 ## License
 
-Copyright © 2021 Amperity, Inc.
+Copyright © 2025 Amperity, Inc.
 
 Distributed under the MIT License.
