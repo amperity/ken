@@ -20,7 +20,7 @@
 
 (def basis (b/create-basis {:project "deps.edn"}))
 (def lib-name 'com.amperity/ken)
-(def base-version "1.3")
+(def base-version "2.0")
 
 (def src-dir "src")
 (def class-dir "target/classes")

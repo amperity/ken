@@ -1,7 +1,7 @@
 ken
 ===
 
-[![CircleCI](https://circleci.com/gh/amperity/ken.svg?style=shield&circle-token=15e84dcf80db1a201e8113388c86da9dbd5223d4)](https://circleci.com/gh/amperity/ken)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/amperity/ken/tree/main.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/amperity/ken/tree/main)
 [![codecov](https://codecov.io/gh/amperity/ken/branch/main/graph/badge.svg)](https://codecov.io/gh/amperity/ken)
 [![cljdoc badge](https://cljdoc.org/badge/com.amperity/ken)](https://cljdoc.org/d/com.amperity/ken/CURRENT)
 

@@ -8,10 +8,22 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+This major release contains a number of significant changes to simplify the
+library. The core functionality is unchanged, but several dependencies have
+been removed in order to streamline the code. These changes also make the
+library more compatible with Graal for native-image generation.
+
 ### Changed
 - Switch from Leiningen to tools.deps for building the library.
-- Simplify by dropping the `mvxcvi/alphabase` dependency in favor of inlining
-  the hex identifier generation.
+
+### Removed
+- Drop the `alphabase` dependency and inline the hex identifier generation.
+- Drop the `manifold` dependency; instead, ken will operate on Java's built-in
+  `CompletionStage` interface, which manifold `Deferred` values implement.
+- Remove usage of `clojure.spec` in favor of simpler direct value predicates.
+  These are compatible with `malli` schema definitions, though there is no
+  direct usage of the library.
+- Remove support for the legacy trace headers.
 
 
 ## [1.2.0] - 2023-03-20
