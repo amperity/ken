@@ -304,6 +304,7 @@
                       (debug-thread-bindings "bound-error" e)
                       (d/error! d2 e)))
                   (let [d3 (ken/watch "work"
+                             (debug-thread-bindings "in work span")
                              d2)]
                     (debug-thread-bindings "did work span")
                     (deliver container d3))
@@ -323,14 +324,14 @@
                 (try
                   @gate
                   (debug-thread-bindings "in test-thread-2")
-                  ;; TODO: this should be throwing :psyduck:
-                  (let [ret (d/success! d1 :result)]
-                    (debug-thread-bindings "success d1" ret)
-                    (report*
-                      {:type (if (true? ret) :pass :fail)
-                       :message "Should deliver result to core deferred"
-                       :expected true
-                       :actual ret}))
+                  (binding []
+                    (let [ret (d/success! d1 :result)]
+                      (debug-thread-bindings "success d1" ret)
+                      (report*
+                        {:type (if (true? ret) :pass :fail)
+                         :message "Should deliver result to core deferred"
+                         :expected true
+                         :actual ret})))
                   (catch Exception ex
                     (debug-thread-bindings "exception" ex)
                     (report*
@@ -359,7 +360,6 @@
               (is (= :result result))))))
       (is (= 1 (count @observed)))
       (prn @observed)
-      (is false)
       ,,,)))
 
 
