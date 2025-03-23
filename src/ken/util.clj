@@ -22,6 +22,40 @@
     (delay (/ (- (System/nanoTime) start) 1e6))))
 
 
+(let [top-frame (delay
+                  (let [p (promise)]
+                    (doto (Thread.
+                            #(deliver p (Var/getThreadBindingFrame))
+                            "get-top")
+                      (.start))
+                    @p))]
+  (defn get-top
+    []
+    @top-frame))
+
+
+(defn debug-thread-bindings
+  [& msgs]
+  (let [thread (Thread/currentThread)
+        top (get-top)
+        prev-field (doto (.getDeclaredField clojure.lang.Var$Frame "prev")
+                     (.setAccessible true))
+        frames (loop [frames (list (Var/getThreadBindingFrame))]
+                 (if-let [prev (.get prev-field (first frames))]
+                   (recur (conj frames prev))
+                   frames))
+        names (mapv (fn [frame]
+                      (if (identical? frame top)
+                        "TOP"
+                        (format "%08X" (hash frame))))
+                    frames)]
+    (printf "[%s] %s :: %s\n"
+            (.getName thread)
+            (clojure.string/join " » " names)
+            (clojure.string/join " " msgs))
+    (flush)))
+
+
 (defn wrap-finally
   "Ensure the function `f` is run after the body run by `body-fn` completes. If
   `body-fn` returns an asynchronous value, `f` will run once it is realized."
@@ -44,6 +78,7 @@
       ;; location `wrap-finally` was invoked. Without this logic the trace
       ;; bindings may be propagated incorrectly to chained functions.
       (instance? CompletionStage result)
+      ;; FIXME: this is the wrong approach
       (let [stage ^CompletionStage result
             bindings (Var/getThreadBindingFrame)]
         (.whenComplete
@@ -51,8 +86,10 @@
           (reify BiConsumer
             (accept
               [_ _ _]
+              (debug-thread-bindings "in whenComplete BiConsumer")
               (Var/resetThreadBindingFrame bindings)
-              (final)))))
+              (final)
+              (debug-thread-bindings "did whenComplete BiConsumer")))))
 
       ;; A value was returned synchronously, so invoke `final` and return.
       :else
