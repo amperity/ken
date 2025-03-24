@@ -1,8 +1,8 @@
 (ns ^:no-doc ken.util
   "Utilities for the observability code."
   (:import
-    clojure.lang.Var
     (java.util.concurrent
+      CompletableFuture
       CompletionStage)
     (java.util.function
       BiConsumer)))
@@ -22,40 +22,85 @@
     (delay (/ (- (System/nanoTime) start) 1e6))))
 
 
+(defmacro ^:private when-manifold
+  "Compile-time support for the manifold async library. Returns nil if manifold
+  is not available."
+  {:clj-kondo/ignore [:unresolved-namespace]}
+  [& body]
+  (try
+    (require 'manifold.deferred)
+    `(do ~@body)
+    (catch Exception _
+      nil)))
+
+
 (defn wrap-finally
   "Ensure the function `f` is run after the body run by `body-fn` completes. If
-  `body-fn` returns an asynchronous value, `f` will run once it is realized."
+  `body-fn` returns an asynchronous value that supports callbacks, `f` will run
+  once it is realized. `f` must not throw exceptions."
   [body-fn f]
-  (let [final (bound-fn* f)
-        [result err] (try
+  (let [[result err] (try
                        [(body-fn) nil]
                        (catch Exception ex
                          [nil ex]))]
     (cond
-      ;; An error was thrown synchronously, so invoke `final` and re-throw.
+      ;; An error was thrown synchronously, so invoke `f` and re-throw.
       err
       (do
-        (final)
+        (f)
         (throw err))
 
-      ;; A native Java async stage was returned, so attach a when-complete
-      ;; callback to execute the final logic. We also need to ensure that any
-      ;; further callbacks operate with the same thread bindings as the
-      ;; location `wrap-finally` was invoked. Without this logic the trace
+      ;; A manifold deferred value was returned, so construct a new deferred value
+      ;; that the final logic can be triggered from. We also need to ensure
+      ;; that any further callbacks operate with the same thread bindings as
+      ;; the location `wrap-finally` was invoked. Without this logic the trace
       ;; bindings may be propagated incorrectly to chained functions.
+      (when-manifold
+        (manifold.deferred/deferred? result))
+      (when-manifold
+        (let [ret (manifold.deferred/deferred)]
+          (manifold.deferred/on-realized
+            result
+            (bound-fn bound-success
+              [x]
+              (f)
+              (manifold.deferred/success! ret x))
+            (bound-fn bound-error
+              [ex]
+              (f)
+              (manifold.deferred/error! ret ex)))
+          ret))
+
+      ;; A Java async stage or completable future was returned, so attach a
+      ;; callback to execute the final logic. As above, this needs to propagate
+      ;; thread bindings.
       (instance? CompletionStage result)
-      (let [stage ^CompletionStage result
-            bindings (Var/getThreadBindingFrame)]
+      (let [bindings (get-thread-bindings)
+            cf ^CompletableFuture (if (instance? CompletableFuture result)
+                                    (.newIncompleteFuture ^CompletableFuture result)
+                                    (CompletableFuture.))]
         (.whenComplete
-          stage
+          ^CompletionStage result
           (reify BiConsumer
             (accept
-              [_ _ _]
-              (Var/resetThreadBindingFrame bindings)
-              (final)))))
+              [_ value ex]
+              (push-thread-bindings bindings)
+              (try
+                (f)
+                (if ex
+                  (.completeExceptionally cf ex)
+                  (.complete cf value))
+                (finally
+                  (pop-thread-bindings))))))
+        cf)
 
-      ;; A value was returned synchronously, so invoke `final` and return.
+      ;; NOTE: if a regular old `future` was returned, we could wrap it in
+      ;; another thread waiting for it to complete, but that seems like it
+      ;; would be a pretty surprising resource allocation for an observability
+      ;; library to make. Maybe reconsider when virtual threads are the norm?
+
+      ;; A value was returned synchronously, so invoke `f` and return.
       :else
       (do
-        (final)
+        (f)
         result))))

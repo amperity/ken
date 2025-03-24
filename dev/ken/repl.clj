@@ -8,4 +8,5 @@
     [ken.event :as event]
     [ken.tap :as tap]
     [ken.trace :as trace]
+    [ken.util :as ku]
     [manifold.deferred :as d]))

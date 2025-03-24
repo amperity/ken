@@ -9,7 +9,9 @@
   (:import
     (java.util.concurrent
       CompletableFuture
-      CompletionStage)))
+      CompletionStage)
+    (java.util.function
+      Function)))
 
 
 (defmacro capture-observed
@@ -225,10 +227,10 @@
             "inner span inherits sampling decision")))))
 
 
+;; This test covers a specific issue that can cause incorrect span
+;; hierarchies in manifold. Making `then` a `bound-fn` fixes this problem,
+;; but this should work correctly out of the box.
 (deftest manifold-trace-propagation
-  ;; This test covers a specific issue that can cause incorrect span
-  ;; hierarchies in manifold. Making `then` a `bound-fn` fixes this problem,
-  ;; but ideally this should just work correctly out of the box.
   (capture-observed
     (let [gate (promise)
           work (ken/watch "top"
@@ -253,6 +255,40 @@
                      (ken/watch "two"
                        (inc x)))))]
       (deliver gate :go)
+      (is (= 2 @work)))
+    (is (= 3 (count @observed)))
+    (is (= ["one" "two" "top"]
+           (map ::event/label @observed)))
+    (let [[one two top] @observed]
+      (is (= (::trace/trace-id top)
+             (::trace/trace-id one))
+          "first child span should belong to same trace")
+      (is (= (::trace/trace-id top)
+             (::trace/trace-id two))
+          "second child span should belong to same trace")
+      (is (= (::trace/span-id top)
+             (::trace/parent-id one))
+          "first child should have top as parent")
+      (is (= (::trace/span-id top)
+             (::trace/parent-id two))
+          "second child should have top as parent"))))
+
+
+;; Same as the manifold test above, but for Java's CompletableFuture.
+(deftest completable-future-trace-propagation
+  (capture-observed
+    (let [one (CompletableFuture.)
+          work (ken/watch "top"
+                 (->
+                   (ken/watch "one"
+                     one)
+                   (.thenApply
+                     (reify Function
+                       (apply
+                         [_ x]
+                         (ken/watch "two"
+                           (inc x)))))))]
+      (.complete one 1)
       (is (= 2 @work)))
     (is (= 3 (count @observed)))
     (is (= ["one" "two" "top"]
