@@ -1,10 +1,16 @@
-/target
+# Development tooling
 /.idea
 *.iml
+.nrepl-port
+
+# Dependencies and caches
+/.cpcache
+/.clj-kondo/inline-configs
+/.clj-kondo/.lock
+/.clj-kondo/.cache
+
+# Build outputs
+/target
 *.jar
 *.class
 *.asc
-.lein-*
-.nrepl-port
-.clj-kondo/.cache
-.cpcache
