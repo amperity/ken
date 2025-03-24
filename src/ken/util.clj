@@ -1,7 +1,6 @@
 (ns ^:no-doc ken.util
   "Utilities for the observability code."
   (:import
-    clojure.lang.Var
     (java.util.concurrent
       CompletableFuture
       CompletionStage)
@@ -23,43 +22,10 @@
     (delay (/ (- (System/nanoTime) start) 1e6))))
 
 
-(let [top-frame (delay
-                  (let [p (promise)]
-                    (doto (Thread.
-                            #(deliver p (Var/getThreadBindingFrame))
-                            "get-top")
-                      (.start))
-                    @p))]
-  (defn get-top
-    []
-    @top-frame))
-
-
-(defn debug-thread-bindings
-  [& msgs]
-  (let [thread (Thread/currentThread)
-        top (get-top)
-        prev-field (doto (.getDeclaredField clojure.lang.Var$Frame "prev")
-                     (.setAccessible true))
-        frames (loop [frames (list (Var/getThreadBindingFrame))]
-                 (if-let [prev (.get prev-field (first frames))]
-                   (recur (conj frames prev))
-                   frames))
-        names (mapv (fn [frame]
-                      (if (identical? frame top)
-                        "TOP"
-                        (format "%08X" (hash frame))))
-                    frames)]
-    (printf "[%s] %s :: %s\n"
-            (.getName thread)
-            (clojure.string/join " » " names)
-            (clojure.string/join " " msgs))
-    (flush)))
-
-
 (defmacro ^:private when-manifold
   "Compile-time support for the manifold async library. Returns nil if manifold
   is not available."
+  {:clj-kondo/ignore [:unresolved-namespace]}
   [& body]
   (try
     (require 'manifold.deferred)

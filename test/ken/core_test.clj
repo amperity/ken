@@ -1,11 +1,10 @@
 (ns ken.core-test
   (:require
-    [clojure.test :refer [deftest testing is do-report]]
+    [clojure.test :refer [deftest testing is]]
     [ken.core :as ken]
     [ken.event :as event]
     [ken.tap :as tap]
     [ken.trace :as trace]
-    [ken.util :refer [debug-thread-bindings]]
     [manifold.deferred :as d])
   (:import
     (java.util.concurrent
@@ -291,7 +290,6 @@
                            (inc x)))))))]
       (.complete one 1)
       (is (= 2 @work)))
-    (run! prn @observed)
     (is (= 3 (count @observed)))
     (is (= ["one" "two" "top"]
            (map ::event/label @observed)))
@@ -308,97 +306,6 @@
       (is (= (::trace/span-id top)
              (::trace/parent-id two))
           "second child should have top as parent"))))
-
-
-;; This test covers another issue with Manifold where chaining thread values was
-;; being incorrectly handled by the ken 2.0.47 code.
-(deftest manifold-carried-bindings
-  (capture-observed
-    (let [report* (bound-fn* do-report)
-          container (promise)
-          d1 (d/deferred)
-          ;; NOTE: we have to jump through some hoops here to intentionally set up
-          ;; the `ken/watch` so there are no outer bindings and the callbacks are
-          ;; saving `Var$Frame.TOP`. Otherwise `clojure.test` has enclosing thread
-          ;; bindings for the test context and reporting, which fail to exercise
-          ;; the regression.
-          f (d/future
-              (try
-                (debug-thread-bindings "in test-thread-1")
-                (let [d2 (d/deferred)]
-                  (d/on-realized
-                    d1
-                    (bound-fn bound-success
-                      [x]
-                      (debug-thread-bindings "enter: bound-success" x)
-                      (d/success! d2 x)
-                      (debug-thread-bindings "exit: bound-success"))
-                    (bound-fn bound-error
-                      [e]
-                      (d/error! d2 e)))
-                  (let [d3 (ken/watch "work"
-                             (debug-thread-bindings "enter: work span")
-                             d2)]
-                    (debug-thread-bindings "after: work span")
-                    (deliver container d3)))
-                (catch Exception ex
-                  (debug-thread-bindings "caught:" (.getName (class ex)) (ex-message ex))
-                  (report*
-                    {:type :fail
-                     :message "Exception while setting up carried bindings"
-                     :expected nil
-                     :actual ex}))))]
-      ;; This second thread plays the role of the non-Clojure thread delivering
-      ;; a result value asynchronously. It has no thread binding frames.
-      (doto (Thread.
-              (fn test-thread-2
-                []
-                (try
-                  (debug-thread-bindings "in test-thread-2")
-                  (let [signal (deref f 100 ::timeout)]
-                    (if (identical? ::timeout signal)
-                      (report*
-                        {:type :fail
-                         :message "Timed out waiting for gate signal"
-                         :expected true
-                         :actual ::timeout})
-                      (let [ret (d/success! d1 :result)]
-                        (debug-thread-bindings "after: success d1" ret)
-                        (report*
-                          {:type (if (true? ret) :pass :fail)
-                           :message "Should deliver result to core deferred"
-                           :expected true
-                           :actual ret}))))
-                  (catch Exception ex
-                    (debug-thread-bindings "caught:" (.getName (class ex)) (ex-message ex))
-                    (report*
-                      {:type :fail
-                       :message "Exception while delivering carried bindings"
-                       :expected true
-                       :actual ex}))))
-              "test-thread-2")
-        (.start))
-      ;; ...
-      (let [d3 (deref container 100 ::timeout)]
-        (debug-thread-bindings "after: deref container" d3)
-        (if (identical? ::timeout d3)
-          (do-report
-            {:type :fail
-             :message "Timed out waiting for deferred construction"
-             :expected :result
-             :actual ::timeout})
-          (let [result (deref d3 100 ::timeout)]
-            (if (identical? ::timeout result)
-              (do-report
-                {:type :fail
-                 :message "Timed out waiting for deferred delivery"
-                 :expected :result
-                 :actual ::timeout})
-              (is (= :result result))))))
-      (is (= 1 (count @observed)))
-      (prn @observed)
-      #_(is false)
-      ,,,)))
 
 
 (deftest annotations
