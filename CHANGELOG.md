@@ -8,7 +8,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-...
+This PR fixes an issue in 2.x where, in very specific circumstances, the
+thread-binding machinery would throw an exception inside Manifold's deferred
+callback handlers.
+
+### Fixed
+- Fix issue with Manifold thread-binding interaction.
+  [#11](https://github.com/amperity/ken/issues/11)
+  [PR#12](https://github.com/amperity/ken/pull/12)
+
+### Changed
+- Improve compatibility when used with custom `CompletableFuture`
+  implementations.
 
 
 ## [2.0.47] - 2025-03-18
