@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+...
+
+
+## [2.0.50] - 2025-03-24
+
 This PR fixes an issue in 2.x where, in very specific circumstances, the
 thread-binding machinery would throw an exception inside Manifold's deferred
 callback handlers.
@@ -111,7 +116,8 @@ Initial open-source project release.
 - Extend test coverage of code.
 
 
-[Unreleased]: https://github.com/amperity/ken/compare/2.0.47...HEAD
+[Unreleased]: https://github.com/amperity/ken/compare/2.0.50...HEAD
+[2.0.50]: https://github.com/amperity/ken/compare/2.0.47...2.0.50
 [2.0.47]: https://github.com/amperity/ken/compare/1.2.0...2.0.47
 [1.2.0]: https://github.com/amperity/ken/compare/1.1.0...1.2.0
 [1.1.0]: https://github.com/amperity/ken/compare/1.0.2...1.1.0
