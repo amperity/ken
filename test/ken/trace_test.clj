@@ -63,11 +63,12 @@
                {:foo 123
                 ::trace/keep? true}))
           "should preserve other keys")
-      (is (= {::trace/keep? false}
+      (is (= {::trace/keep? false
+              ::trace/sample-rate 10}
              (trace/maybe-sample
                {::trace/keep? false
                 ::event/sample-rate 10}))
-          "should remove sample rate"))
+          "should replace ::event/sample-rate with ::trace/sample-rate"))
     (testing "event with sample rate"
       (testing "selected to keep"
         (with-redefs [trace/sample? (constantly true)]

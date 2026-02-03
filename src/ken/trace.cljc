@@ -124,7 +124,9 @@
      (when-let [parent-id (::span-id data)]
        {::parent-id parent-id})
      (when-some [keep? (::keep? data)]
-       {::keep? keep?}))))
+       {::keep? keep?})
+     (when-some [sample-rate (::sample-rate data)]
+       {::sample-rate sample-rate}))))
 
 
 ;; ## Sampling Logic
@@ -142,7 +144,10 @@
   (cond
     ;; Sampling decision has already been made, so disregard any sample rate.
     (some? (::keep? event))
-    (dissoc event ::event/sample-rate)
+    (if-let [sample-rate (::event/sample-rate event)]
+      (-> (dissoc event ::event/sample-rate)
+          (assoc ::sample-rate sample-rate))
+      event)
 
     ;; Sample rate is set without decision, so randomly sample. In the case
     ;; where we decide to keep the event, _do not_ set `::keep?` so that
