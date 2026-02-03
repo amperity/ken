@@ -41,11 +41,13 @@
       (is (= {::trace/trace-id "trace123"
               ::trace/parent-id "span456"
               ::trace/span-id "span789"
-              ::trace/keep? false}
+              ::trace/keep? false
+              ::trace/sample-rate 10}
              (trace/child-attrs
                {::trace/trace-id "trace123"
                 ::trace/span-id "span456"
-                ::trace/keep? false}))))))
+                ::trace/keep? false
+                ::trace/sample-rate 10}))))))
 
 
 (deftest sampling
