@@ -41,11 +41,13 @@
       (is (= {::trace/trace-id "trace123"
               ::trace/parent-id "span456"
               ::trace/span-id "span789"
-              ::trace/keep? false}
+              ::trace/keep? false
+              ::trace/upstream-sampling 10}
              (trace/child-attrs
                {::trace/trace-id "trace123"
                 ::trace/span-id "span456"
-                ::trace/keep? false}))))))
+                ::trace/keep? false
+                ::trace/upstream-sampling 10}))))))
 
 
 (deftest sampling
@@ -63,11 +65,12 @@
                {:foo 123
                 ::trace/keep? true}))
           "should preserve other keys")
-      (is (= {::trace/keep? false}
+      (is (= {::trace/keep? false
+              ::trace/upstream-sampling 10}
              (trace/maybe-sample
                {::trace/keep? false
                 ::event/sample-rate 10}))
-          "should remove sample rate"))
+          "should replace ::event/sample-rate with ::trace/upstream-sampling"))
     (testing "event with sample rate"
       (testing "selected to keep"
         (with-redefs [trace/sample? (constantly true)]
