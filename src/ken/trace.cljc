@@ -125,8 +125,8 @@
        {::parent-id parent-id})
      (when-some [keep? (::keep? data)]
        {::keep? keep?})
-     (when-some [sample-rate (::upstream-sample-rate data)]
-       {::upstream-sample-rate sample-rate}))))
+     (when-some [sample-rate (::upstream-sampling data)]
+       {::upstream-sampling sample-rate}))))
 
 
 ;; ## Sampling Logic
@@ -146,7 +146,7 @@
     (some? (::keep? event))
     (if-let [sample-rate (::event/sample-rate event)]
       (-> (dissoc event ::event/sample-rate)
-          (assoc ::upstream-sample-rate sample-rate))
+          (assoc ::upstream-sampling sample-rate))
       event)
 
     ;; Sample rate is set without decision, so randomly sample. In the case
