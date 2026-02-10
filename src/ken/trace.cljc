@@ -142,7 +142,7 @@
   "Apply sampling logic to the event, returning an updated event map."
   [event]
   (cond
-    ;; Sampling decision has already been made, so disregard any sample rate.
+    ;; Sampling decision has already been made, rename to :ken.trace/upstream-sampling
     (some? (::keep? event))
     (if-let [sample-rate (::event/sample-rate event)]
       (-> (dissoc event ::event/sample-rate)
