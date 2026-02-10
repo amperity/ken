@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+...
+
+
+## [2.1.55] - 2026-02-10
+
 - Change in how sampling works. `ken.trace/maybe-sample` now renames `:ken.event/sample-rate` to `:ken.trace/upstream-sampling`
   so that it can be used by ken tap subscribers. [PR#13](https://github.com/amperity/ken/pull/13)
 
@@ -117,7 +122,8 @@ Initial open-source project release.
 - Extend test coverage of code.
 
 
-[Unreleased]: https://github.com/amperity/ken/compare/2.0.50...HEAD
+[Unreleased]: https://github.com/amperity/ken/compare/2.1.55...HEAD
+[2.1.55]: https://github.com/amperity/ken/compare/2.0.50...2.1.55
 [2.0.50]: https://github.com/amperity/ken/compare/2.0.47...2.0.50
 [2.0.47]: https://github.com/amperity/ken/compare/1.2.0...2.0.47
 [1.2.0]: https://github.com/amperity/ken/compare/1.1.0...1.2.0
