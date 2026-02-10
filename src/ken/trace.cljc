@@ -124,7 +124,9 @@
      (when-let [parent-id (::span-id data)]
        {::parent-id parent-id})
      (when-some [keep? (::keep? data)]
-       {::keep? keep?}))))
+       {::keep? keep?})
+     (when-some [sample-rate (::upstream-sampling data)]
+       {::upstream-sampling sample-rate}))))
 
 
 ;; ## Sampling Logic
@@ -140,9 +142,12 @@
   "Apply sampling logic to the event, returning an updated event map."
   [event]
   (cond
-    ;; Sampling decision has already been made, so disregard any sample rate.
+    ;; Sampling decision has already been made, rename to :ken.trace/upstream-sampling
     (some? (::keep? event))
-    (dissoc event ::event/sample-rate)
+    (if-let [sample-rate (::event/sample-rate event)]
+      (-> (dissoc event ::event/sample-rate)
+          (assoc ::upstream-sampling sample-rate))
+      event)
 
     ;; Sample rate is set without decision, so randomly sample. In the case
     ;; where we decide to keep the event, _do not_ set `::keep?` so that
