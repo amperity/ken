@@ -284,6 +284,16 @@ the events or not.
 - [ken-honeycomb](https://github.com/amperity/ken-honeycomb) integrates with [honeycomb.io](https://www.honeycomb.io/)
 
 
+## Releasing
+
+Releases are published using the Clojure CLI / deps.edn and [deps-deploy](https://github.com/slipset/deps-deploy).
+
+- Run `bin/build prep-release`. This updates [CHANGELOG.md](./CHANGELOG.md)
+  with the new project version, commits to git, and creates a git tag.
+- Get a Clojars deploy token
+- Run `bin/build deploy`. This publishes to Clojars.
+
+
 ## License
 
 Copyright © 2025 Amperity, Inc.
