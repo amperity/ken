@@ -8,7 +8,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-...
+- Change in how sampling works. `ken.trace/maybe-sample` now renames `:ken.event/sample-rate` to `:ken.trace/upstream-sampling`
+  so that it can be used by ken tap subscribers. [PR#13](https://github.com/amperity/ken/pull/13)
 
 
 ## [2.0.50] - 2025-03-24
