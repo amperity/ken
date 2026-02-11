@@ -213,18 +213,31 @@
       (let [[inner outer :as spans] @observed]
         (is (= ["inner" "outer"] (map ::event/label spans))
             "events occur in expected order")
-        (is (string? (::trace/trace-id outer))
-            "root span has a trace-id")
-        (is (apply = (map ::trace/trace-id spans))
-            "all spans share the same trace")
-        (is (= (::trace/span-id outer) (::trace/parent-id inner))
-            "inner is a child of outer")
-        (is (not= (::trace/span-id outer) (::trace/span-id inner))
-            "spans have distinct ids")
-        (is (false? (::trace/keep? outer))
-            "outer span is sampled away")
-        (is (false? (::trace/keep? inner))
-            "inner span inherits sampling decision")))))
+        (testing ":ken.trace/trace-id"
+          (is (string? (::trace/trace-id outer))
+              "root span has a trace-id")
+          (is (apply = (map ::trace/trace-id spans))
+              "all spans share the same trace"))
+        (testing ":ken.trace/span-id and :ken.trace/parent-id"
+          (is (= (::trace/span-id outer) (::trace/parent-id inner))
+              "inner is a child of outer")
+          (is (not= (::trace/span-id outer) (::trace/span-id inner))
+              "spans have distinct ids"))
+        (testing ":ken.event/sample-rate"
+          (is (= 5 (::event/sample-rate outer))
+              "outer span has sample-rate")
+          (is (nil? (::event/sample-rate inner))
+              "inner span doesn't have sample-rate"))
+        (testing ":ken.trace/upstream-sampling"
+          (is (nil? (::trace/upstream-sampling outer))
+              "outer span doesn't have upstream-sampling")
+          (is (= 5 (::trace/upstream-sampling inner))
+              "inner span has upstream-sampling"))
+        (testing ":ken.trace/keep?"
+          (is (false? (::trace/keep? outer))
+              "outer span is sampled away")
+          (is (false? (::trace/keep? inner))
+              "inner span inherits sampling decision"))))))
 
 
 ;; This test covers a specific issue that can cause incorrect span
