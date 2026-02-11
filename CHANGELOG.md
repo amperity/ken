@@ -8,6 +8,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+...
+
+
+## [2.1.59] - 2026-02-10
+
 ### Fixed
 - Fixed `:ken.trace/upstream-sampling` not passing through to child spans. [PR#14](https://github.com/amperity/ken/pull/14)
 
@@ -124,7 +129,8 @@ Initial open-source project release.
 - Extend test coverage of code.
 
 
-[Unreleased]: https://github.com/amperity/ken/compare/2.1.55...HEAD
+[Unreleased]: https://github.com/amperity/ken/compare/2.1.59...HEAD
+[2.1.59]: https://github.com/amperity/ken/compare/2.1.55...2.1.59
 [2.1.55]: https://github.com/amperity/ken/compare/2.0.50...2.1.55
 [2.0.50]: https://github.com/amperity/ken/compare/2.0.47...2.0.50
 [2.0.47]: https://github.com/amperity/ken/compare/1.2.0...2.0.47
