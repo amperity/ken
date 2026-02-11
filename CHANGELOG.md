@@ -8,11 +8,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-...
+### Fixed
+- Fixed `:ken.trace/upstream-sampling` not passing through to child spans. [PR#14](https://github.com/amperity/ken/pull/14)
 
 
 ## [2.1.55] - 2026-02-10
 
+### Changed
 - Change in how sampling works. `ken.trace/maybe-sample` now renames `:ken.event/sample-rate` to `:ken.trace/upstream-sampling`
   so that it can be used by ken tap subscribers. [PR#13](https://github.com/amperity/ken/pull/13)
 
