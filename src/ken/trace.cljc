@@ -94,10 +94,10 @@
 
 
 (defn current-data
-  "Return the current trace-id, span-id, and keep flag from the dynamic
-  context, if any."
+  "Return the current trace-id, span-id, keep flag, and sampling info from the
+  dynamic context, if any."
   []
-  (some-> *data* deref (select-keys [::trace-id ::span-id ::keep?])))
+  (some-> *data* deref (select-keys [::trace-id ::span-id ::keep? ::upstream-sampling ::event/sample-rate])))
 
 
 (defn current-trace-id
@@ -125,7 +125,7 @@
        {::parent-id parent-id})
      (when-some [keep? (::keep? data)]
        {::keep? keep?})
-     (when-some [sample-rate (::upstream-sampling data)]
+     (when-some [sample-rate (or (::event/sample-rate data) (::upstream-sampling data))]
        {::upstream-sampling sample-rate}))))
 
 
@@ -144,10 +144,7 @@
   (cond
     ;; Sampling decision has already been made, rename to :ken.trace/upstream-sampling
     (some? (::keep? event))
-    (if-let [sample-rate (::event/sample-rate event)]
-      (-> (dissoc event ::event/sample-rate)
-          (assoc ::upstream-sampling sample-rate))
-      event)
+    (dissoc event ::event/sample-rate)
 
     ;; Sample rate is set without decision, so randomly sample. In the case
     ;; where we decide to keep the event, _do not_ set `::keep?` so that
